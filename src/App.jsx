@@ -7,7 +7,7 @@ import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, AreaChart,
 import { evtolFleet, settingsSections } from './data/evtolData';
 
 const APP_START_TIME = Date.now();
-const USE_REAL_MODEL = true; //想要用真實 3D 模型時，把這裡改成 true，並把模型檔案放到 public/evtol.glb
+const USE_REAL_MODEL = true;
 const FORCE_DESKTOP = true;
 
 const navItems = [
