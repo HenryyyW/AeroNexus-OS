@@ -317,7 +317,7 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
     frameId = requestAnimationFrame(animate); 
     return () => cancelAnimationFrame(frameId); 
   }, [aircraft, showAll, fleet]);
-  return <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#06101b] bg-cover bg-center" style={{ backgroundImage: "url('/map-bg.jpg')" }}>
+  return <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#06101b] bg-cover bg-center" style={{ backgroundImage: "url('/map-bg2.jpg')" }}>
     <div className="absolute inset-0 bg-[#06101b]/60" />
     {!hideLabel && <div className="absolute left-3 top-2.5 z-10 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">Satellite map and eVTOL locations</div>}
     <svg className="absolute inset-0 h-full w-full" viewBox="0 0 400 320" preserveAspectRatio="none">
