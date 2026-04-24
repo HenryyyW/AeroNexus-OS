@@ -25,25 +25,25 @@ Please ensure you have the following tools installed on your machine:
 First-Time Setup
 If you are joining the project for the first time, open your terminal (Terminal / CMD / Git Bash) and run the following commands to clone the repo and install dependencies:
 
-# 1. Clone the repository to your local machine
+1. Clone the repository to your local machine
 git clone https://github.com/HowardAscendo/ascendo-care-demo.git
 
-# 2. Navigate into the project folder
+2. Navigate into the project folder
 cd ascendo-care-demo
 
-# 3. Install all required dependencies (this will generate the node_modules folder)
+3. Install all required dependencies (this will generate the node_modules folder)
 npm install
 
 Daily Updates & Running the App (Pull & Run)
 If you already have the project cloned and want to get the latest updates pushed by the team, navigate to the ascendo-care-demo folder and run:
 
-# 1. Fetch the latest code from GitHub
+1. Fetch the latest code from GitHub
 git pull
 
-# 2. Ensure all packages are up-to-date (in case new libraries were added)
+2. Ensure all packages are up-to-date (in case new libraries were added)
 npm install
 
-# 3. Start the local development server
+3. Start the local development server
 npm run dev
 
 Viewing the Web App
