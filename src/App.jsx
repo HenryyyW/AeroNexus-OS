@@ -12,9 +12,9 @@ const FORCE_DESKTOP = true;
 
 const navItems = [
   { key: 'home', label: 'Home', icon: Home },
-  { key: 'details', label: 'eVTOL Details', icon: Plane },
-  { key: 'twins', label: 'Digital Twins', icon: Cpu },
-  { key: 'settings', label: 'Setting', icon: Settings },
+  { key: 'details', label: 'Asset Diagnostics', icon: Plane },
+  { key: 'twins', label: 'Spatial Synchronization', icon: Cpu },
+  { key: 'settings', label: 'System Configuration', icon: Settings },
 ];
 
 
@@ -28,8 +28,8 @@ function LoginPage({ onLogin }) {
       <div className="relative flex min-h-screen items-center justify-center p-4">
         <div className="w-full max-w-md rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-8 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
           <div className="mb-6">
-            <div className="text-[10px] uppercase tracking-[0.38em] text-cyan-400/80">Ascendo Care</div>
-            <h1 className="mt-2 text-3xl font-semibold text-white">eVTOL Ops Console</h1>
+            <div className="text-[10px] uppercase tracking-[0.38em] text-cyan-400/80">Ascendo Nexus OS</div>
+            <h1 className="mt-2 text-3xl font-semibold text-white">Nexus OS Workspace</h1>
             <p className="mt-2 text-sm leading-6 text-slate-400">Please sign in to access the home dashboard.</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,8 +100,8 @@ function Sidebar({ activePage, setActivePage }) {
   return (
     <aside className="w-[220px] shrink-0 rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-2.5 backdrop-blur-xl self-start sticky top-2.5">
       <div className="mb-3 px-1">
-        <div className="text-[10px] uppercase tracking-[0.38em] text-cyan-400/80">Ascendo Care</div>
-        <div className="mt-2 text-lg font-semibold tracking-wide text-white">eVTOL Ops Console</div>
+        <div className="text-[10px] uppercase tracking-[0.38em] text-cyan-400/80">Ascendo Nexus OS</div>
+        <div className="mt-2 text-lg font-semibold tracking-wide text-white">Nexus OS Workspace</div>
       </div>
       <nav className="space-y-2">
         {navItems.map(({ key, label, icon: Icon }) => {
@@ -115,19 +115,19 @@ function Sidebar({ activePage, setActivePage }) {
         })}
       </nav>
       <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-2.5">
-        <div className="flex items-center gap-2 text-sm text-emerald-300"><div className="h-2 w-2 rounded-full bg-emerald-400" />SYSTEM ONLINE</div>
-        <div className="mt-2 text-xs leading-6 text-slate-400">Low-altitude economy digital twin and predictive maintenance proof-of-concept.</div>
+        <div className="flex items-center gap-2 text-sm text-emerald-300"><div className="h-2 w-2 rounded-full bg-emerald-400" />NETWORK NOMINAL</div>
+        <div className="mt-2 text-xs leading-6 text-slate-400">Federated Intelligence & Predictive Health Platform.</div>
       </div>
     </aside>
   );
 }
 
 function TopHeader({ activePage, selectedAircraft, fleetStats, onLogout }) {
-  const titles = { home: 'eVTOL Fleet Monitoring', twins: 'eVTOL Digital Twins', details: 'eVTOL Details', settings: 'Settings' };
+  const titles = { home: 'Fleet Health Overview', twins: 'Spatial Synchronization', details: 'Asset Diagnostics', settings: 'System Configuration' };
   return (
     <header className="mb-3 flex items-center justify-between gap-2 rounded-3xl border border-cyan-500/20 bg-[#07111f]/85 px-6 py-4 backdrop-blur-xl">
       <div>
-        <div className="text-[10px] uppercase tracking-[0.38em] text-cyan-400/80">Digital Twin POC</div>
+        <div className="text-[10px] uppercase tracking-[0.38em] text-cyan-400/80">Active Sync Environment</div>
         <h1 className="mt-1 text-2xl font-bold tracking-wide text-white">{titles[activePage]}</h1>
       </div>
       <div className="flex items-center gap-4">
@@ -144,7 +144,7 @@ function TopHeader({ activePage, selectedAircraft, fleetStats, onLogout }) {
         </div>
 
         <div className="flex flex-col text-right">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">Active Aircraft</div>
+          <div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">Active Trajectories</div>
           <div className="mt-1 font-mono text-sm text-cyan-300">{selectedAircraft.id}</div>
         </div>
 
@@ -221,7 +221,7 @@ function AircraftModel({ aircraft }) {
 }
 
 
-function DigitalTwinViewer({ aircraft, title='eVTOL 3D Rendering' }) {
+function DigitalTwinViewer({ aircraft, title='Live Asset Replication' }) {
   const tone = getStatusTone(aircraft.status);
   return <section className="relative flex min-h-[360px] flex-col overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#07111f]/90">
     <div className="absolute left-3 top-2.5 z-10 rounded-xl border border-cyan-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-300">{title}</div>
@@ -251,7 +251,7 @@ function FleetCard({ aircraft, selected, onClick }) {
     <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Aircraft</div><div className="mt-1 text-[clamp(1rem,1.4vw,1.5rem)] font-bold text-white tracking-tight truncate">{aircraft.displayName}</div><div className="mt-1  text-xs text-slate-400">{aircraft.id} · {aircraft.model}</div></div><div className={cn('shrink-0 rounded-full px-2 py-1 text-[10px] font-medium', tone.chip)}>{aircraft.status}</div></div>
     <div className="mt-4 grid grid-cols-2 gap-2"><MetricPill label="Health" value={`${aircraft.health}%`} tone={aircraft.health < 90 ? 'danger' : 'ok'} /><MetricPill label="SoC" value={`${aircraft.soc}%`} /><MetricPill label="Temp" value={`${aircraft.temperature}°C`} tone={aircraft.temperature >= 65 ? 'danger' : 'warn'} /><MetricPill label="RUL" value={`${aircraft.rul} min`} tone={aircraft.rul < 60 ? 'danger' : 'ok'} /></div>
     <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-2.5"><div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">Mission</div><div className="mt-1 text-sm font-medium text-slate-200">{aircraft.mission}</div><div className="mt-1 text-xs text-slate-400">{aircraft.role}</div></div>
-    <div className="mt-auto flex items-center justify-between pt-3 text-xs"><span className="text-slate-400">Open aircraft console</span><span className="flex items-center gap-1 text-cyan-300">Inspect <ChevronRight size={14} /></span></div>
+    <div className="mt-auto flex items-center justify-between pt-3 text-xs"><span className="text-slate-400">Access Asset Telemetry</span><span className="flex items-center gap-1 text-cyan-300">Diagnose <ChevronRight size={14} /></span></div>
   </button>;
 }
 
@@ -319,7 +319,7 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
   }, [aircraft, showAll, fleet]);
   return <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#06101b] bg-cover bg-center" style={{ backgroundImage: "url('/map-bg2.jpg')" }}>
     <div className="absolute inset-0 bg-[#06101b]/60" />
-    {!hideLabel && <div className="absolute left-3 top-2.5 z-10 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">Satellite map and eVTOL locations</div>}
+    {!hideLabel && <div className="absolute left-3 top-2.5 z-10 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">Airspace Trajectory Map</div>}
     <svg className="absolute inset-0 h-full w-full" viewBox="0 0 400 320" preserveAspectRatio="none">
       <defs><linearGradient id="routeStroke" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#00f0ff" /><stop offset="100%" stopColor="#37f29b" /></linearGradient></defs>
       {(showAll ? fleet : [aircraft]).map(item => {
@@ -351,7 +351,7 @@ function TwinsPage({ selectedAircraft, fleet, setSelectedAircraft }) {
   
   
   return <section className="grid grid-cols-[1.12fr_0.88fr] gap-2">
-    <DigitalTwinViewer aircraft={selectedAircraft} title="eVTOL 3D Rendering" />
+    <DigitalTwinViewer aircraft={selectedAircraft} title="Live Asset Replication" />
     <div className="grid min-w-0 gap-2">
       <AnimatedMap aircraft={selectedAircraft} showAll fleet={fleet} onSelectAircraft={setSelectedAircraft} />
       <div className="grid grid-cols-2 gap-2">
@@ -363,7 +363,7 @@ function TwinsPage({ selectedAircraft, fleet, setSelectedAircraft }) {
 
 function DetailMetric({ label, value, accent='text-cyan-300' }) { return <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-2.5"><div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">{label}</div><div className={cn('mt-1 text-base font-mono', accent)}>{value}</div></div>; }
 function PdMTrendChart({ data, dataKey, color, title }) { return <div className="rounded-3xl border border-white/10 bg-[#07111f]/85 p-2.5"><div className="mb-2 text-sm font-medium text-slate-300">{title}</div><div className="h-40"><ResponsiveContainer width="100%" height="100%"><LineChart data={data}><XAxis dataKey="t" tick={{ fill:'#64748b', fontSize:10 }} axisLine={false} tickLine={false} /><YAxis hide /><Tooltip contentStyle={{ backgroundColor:'#050b14', border:'1px solid rgba(0,240,255,.15)', borderRadius:'12px', color:'#e2f7ff' }} /><Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2.3} dot={false} /></LineChart></ResponsiveContainer></div></div>; }
-function PdMAreaChart({ data }) { return <div className="rounded-3xl border border-white/10 bg-[#07111f]/85 p-2.5"><div className="mb-2 text-sm font-medium text-slate-300">Anomaly Propagation Window</div><div className="h-40"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data}><XAxis dataKey="t" tick={{ fill:'#64748b', fontSize:10 }} axisLine={false} tickLine={false} /><YAxis hide /><Tooltip contentStyle={{ backgroundColor:'#050b14', border:'1px solid rgba(255,77,109,.18)', borderRadius:'12px' }} /><Area type="monotone" dataKey="temp" stroke="#ff4d6d" fill="#ff4d6d22" strokeWidth={2} /></AreaChart></ResponsiveContainer></div></div>; }
+function PdMAreaChart({ data }) { return <div className="rounded-3xl border border-white/10 bg-[#07111f]/85 p-2.5"><div className="mb-2 text-sm font-medium text-slate-300">Degradation Vector Analysis</div><div className="h-40"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data}><XAxis dataKey="t" tick={{ fill:'#64748b', fontSize:10 }} axisLine={false} tickLine={false} /><YAxis hide /><Tooltip contentStyle={{ backgroundColor:'#050b14', border:'1px solid rgba(255,77,109,.18)', borderRadius:'12px' }} /><Area type="monotone" dataKey="temp" stroke="#ff4d6d" fill="#ff4d6d22" strokeWidth={2} /></AreaChart></ResponsiveContainer></div></div>; }
 
 function ComponentsDataPanel({ aircraft }) {
   // 根據主機體數據產生各零件的模擬跳動數據
@@ -392,7 +392,7 @@ function ComponentsDataPanel({ aircraft }) {
     <div className="flex flex-col rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-5 h-full">
       <div className="mb-5">
         <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-400/80">Real-time Telemetry</div>
-        <h2 className="mt-1 text-[clamp(1rem,1.5vw,1.25rem)] font-semibold text-white tracking-wide">eVTOL Components Real-Time Data</h2>
+        <h2 className="mt-1 text-[clamp(1rem,1.5vw,1.25rem)] font-semibold text-white tracking-wide">Subsystem Telemetry Stream</h2>
       </div>
 
       <div className="flex-1 space-y-6 pr-2">
@@ -481,7 +481,7 @@ function DetailsPage({ selectedAircraft }) {
     <ComponentsDataPanel aircraft={selectedAircraft} />
     <div className="grid min-w-0 gap-2">
       <div className="rounded-3xl border border-white/10 bg-[#07111f]/90 p-2.5">
-        <div className="mb-3 flex items-start justify-between gap-2"><div><div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">PdM Data</div><div className="mt-1 text-xl font-semibold text-white">{selectedAircraft.id} Predictive Maintenance Data</div></div><div className={cn('rounded-full px-2 py-1 text-[10px] font-medium', tone.chip)}>{selectedAircraft.pdm.riskLevel} Risk</div></div>
+        <div className="mb-3 flex items-start justify-between gap-2"><div><div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">PdM Data</div><div className="mt-1 text-xl font-semibold text-white">{selectedAircraft.id} RUL Predictive Matrix</div></div><div className={cn('rounded-full px-2 py-1 text-[10px] font-medium', tone.chip)}>{selectedAircraft.pdm.riskLevel} Risk</div></div>
         <div className="grid grid-cols-4 gap-2"><DetailMetric label="Motor RPM" value={Math.round(selectedAircraft.motorRpm)} /><DetailMetric label="Vibration" value={`${Number(selectedAircraft.vibration || 0).toFixed(1)} Hz`} accent={selectedAircraft.vibration > 50 ? 'text-red-300' : 'text-emerald-300'} /><DetailMetric label="Battery Delta" value={`${selectedAircraft.batteryDelta}%`} accent={selectedAircraft.batteryDelta > 3 ? 'text-red-300' : 'text-cyan-300'} /><DetailMetric label="Anomaly Score" value={selectedAircraft.anomalyScore.toFixed(2)} accent={selectedAircraft.anomalyScore > 0.4 ? 'text-red-300' : 'text-amber-300'} /></div>
         <div className="mt-2 rounded-2xl border border-white/10 bg-white/[0.03] p-2.5"><div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">Maintenance Warning</div><div className={cn('mt-1 text-sm leading-6', selectedAircraft.status==='Warning' ? 'text-red-300' : 'text-slate-300')}>{selectedAircraft.pdm.warning}</div></div>
       </div>
@@ -502,10 +502,10 @@ function DetailsPage({ selectedAircraft }) {
 function MetadataRow({ label, value }) { return <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2"><span className="shrink-0 text-slate-400">{label}</span><span className="min-w-0  font-mono text-cyan-300">{value}</span></div>; }
 const localSettingsOptions = {
   general: [
-    { id: 'platformMode', label: 'Platform Mode', value: 'Operations Demo', options: ['Operations Demo', 'Engineering Dev', 'Production Live'] },
+    { id: 'environment', label: 'Environment', value: 'Live Operations', options: ['Live Operations', 'Engineering Dev', 'Production Live'] },
     { id: 'theme', label: 'Theme', value: 'Dark / Cyberpunk', options: ['Dark / Cyberpunk', 'Light / Clean', 'High Contrast'] },
     { id: 'language', label: 'Language', value: 'English', options: ['English', 'Traditional Chinese', 'Simplified Chinese', 'Japanese'] },
-    { id: 'alertThreshold', label: 'Alert Threshold Profile', value: 'Urban Air Mobility', options: ['Urban Air Mobility', 'Strict Safety', 'Cargo Transport', 'Custom'] },
+    { id: 'alertThreshold', label: 'Tolerance & Sensitivity Matrix', value: 'Urban Air Mobility', options: ['Urban Air Mobility', 'Strict Safety', 'Cargo Transport', 'Custom'] },
     { id: 'refreshInterval', label: 'Refresh Interval', value: '1 second', options: ['Real-time (0.1s)', '1 second', '5 seconds', 'Manual'] },
   ],
   twin: [
@@ -576,7 +576,7 @@ function SettingsPage() {
   return (
     <section className="grid gap-2">
       <SettingsBlock title="General" icon={Settings} sectionKey="general" settingsState={settingsState} updateSetting={updateSetting} />
-      <SettingsBlock title="Digital twin configuration" icon={Cpu} sectionKey="twin" settingsState={settingsState} updateSetting={updateSetting} />
+      <SettingsBlock title="Spatial Sync Settings" icon={Cpu} sectionKey="twin" settingsState={settingsState} updateSetting={updateSetting} />
       <SettingsBlock title="Data and Logging" icon={Activity} sectionKey="logging" settingsState={settingsState} updateSetting={updateSetting} />
       <SettingsBlock title="Advanced" icon={Wrench} sectionKey="advanced" settingsState={settingsState} updateSetting={updateSetting} />
     </section>
