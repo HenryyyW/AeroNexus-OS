@@ -96,6 +96,32 @@ function getStatusTone(status) {
   return { chip: 'bg-emerald-400/15 text-emerald-200 border border-emerald-400/30', glow: '#37f29b' };
 }
 
+function normalizeEvtolId(label) {
+  const match = label.trim().toUpperCase().match(/^EVTOL-(\d+)$/);
+  if (!match) return label.trim().toUpperCase();
+  return `EVTOL-${match[1].padStart(2, '0')}`;
+}
+
+function parseAgentResponseFile(rawText) {
+  const responses = {};
+  const normalizedText = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const blockPattern = /^evtol-(\d+):\s*$([\s\S]*?)(?=^evtol-\d+:|\s*$)/gim;
+  let match;
+
+  while ((match = blockPattern.exec(normalizedText)) !== null) {
+    const label = `EVTOL-${match[1].padStart(2, '0')}`;
+    const jsonText = match[2].trim().replace(/,\s*(?=[}\]])/g, '');
+    if (!jsonText) continue;
+    try {
+      responses[label] = JSON.parse(jsonText);
+    } catch (error) {
+      console.warn('Failed to parse agent response block for', label, error.message);
+    }
+  }
+
+  return responses;
+}
+
 function Sidebar({ activePage, setActivePage }) {
   return (
     <aside className="w-[220px] shrink-0 rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-2.5 backdrop-blur-xl self-start sticky top-2.5">
@@ -365,7 +391,7 @@ function DetailMetric({ label, value, accent='text-cyan-300' }) { return <div cl
 function PdMTrendChart({ data, dataKey, color, title }) { return <div className="rounded-3xl border border-white/10 bg-[#07111f]/85 p-2.5"><div className="mb-2 text-sm font-medium text-slate-300">{title}</div><div className="h-40"><ResponsiveContainer width="100%" height="100%"><LineChart data={data}><XAxis dataKey="t" tick={{ fill:'#64748b', fontSize:10 }} axisLine={false} tickLine={false} /><YAxis hide /><Tooltip contentStyle={{ backgroundColor:'#050b14', border:'1px solid rgba(0,240,255,.15)', borderRadius:'12px', color:'#e2f7ff' }} /><Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2.3} dot={false} /></LineChart></ResponsiveContainer></div></div>; }
 function PdMAreaChart({ data }) { return <div className="rounded-3xl border border-white/10 bg-[#07111f]/85 p-2.5"><div className="mb-2 text-sm font-medium text-slate-300">Degradation Vector Analysis</div><div className="h-40"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data}><XAxis dataKey="t" tick={{ fill:'#64748b', fontSize:10 }} axisLine={false} tickLine={false} /><YAxis hide /><Tooltip contentStyle={{ backgroundColor:'#050b14', border:'1px solid rgba(255,77,109,.18)', borderRadius:'12px' }} /><Area type="monotone" dataKey="temp" stroke="#ff4d6d" fill="#ff4d6d22" strokeWidth={2} /></AreaChart></ResponsiveContainer></div></div>; }
 
-function ComponentsDataPanel({ aircraft }) {
+function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
   // 根據主機體數據產生各零件的模擬跳動數據
   const rotors = Array.from({ length: 4 }).map((_, i) => {
     // 製造一點隨機差異讓它看起來像真實各部位獨立的感測器
@@ -387,6 +413,24 @@ function ComponentsDataPanel({ aircraft }) {
     { id: 'Battery Pack A', soc: (aircraft.soc || 0), voltage: (aircraft.voltage || 400).toFixed(1), temp: (aircraft.temperature || 0).toFixed(1), status: (aircraft.soc || 0) < 20 ? 'Warning' : 'Nominal' },
     { id: 'Battery Pack B', soc: Math.max(0, (aircraft.soc || 0) - 2), voltage: Math.max(0, (aircraft.voltage || 400) - 0.4).toFixed(1), temp: ((aircraft.temperature || 0) + 1.2).toFixed(1), status: (aircraft.soc || 0) < 22 ? 'Warning' : 'Nominal' }
   ];
+
+  const cockpitVideoMap = {
+    'EVTOL-01': '/videos/evtol-1.mp4',
+    'EVTOL-02': '/videos/evtol-2.mp4',
+    'EVTOL-03': '/videos/evtol-3.mp4',
+    'EVTOL-04': '/videos/evtol-4.mp4',
+  };
+  const cockpitVideoSrc = cockpitVideoMap[aircraft.id] || '/videos/evtol-1.mp4';
+
+  const agentResponse = agentResponseProp || {
+    safety_risk_assessment: { risk_level: 'Unknown', primary_risk: 'No agent response loaded.' },
+    detailed_analysis: { visual: {}, audio: {}, fusion: 'No fusion analysis available.' },
+    possible_causes: [],
+    recommended_actions: [],
+  };
+
+  const visualItems = Object.values(agentResponse.detailed_analysis.visual || {});
+  const audioItems = Object.values(agentResponse.detailed_analysis.audio || {});
 
   return (
     <div className="flex flex-col rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-5 h-full">
@@ -468,17 +512,100 @@ function ComponentsDataPanel({ aircraft }) {
           </div>
         </div>
 
+        <div>
+          <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">
+            <div className="w-1.5 h-1.5 rounded-full bg-sky-400"></div>
+            Cockpit
+          </h3>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+            <div className="flex justify-between items-center mb-3">
+              <div className="text-sm font-bold text-slate-200">View</div>
+              <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Live</div>
+            </div>
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+              <video autoPlay loop muted playsInline className="w-full aspect-video object-cover" src={cockpitVideoSrc} />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">
+            <div className="w-1.5 h-1.5 rounded-full bg-violet-400"></div>
+            Agentic Guard
+          </h3>
+          <div className="rounded-3xl border border-white/10 bg-[#07111f]/90 p-3.5">
+            <div className="grid gap-3">
+              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-slate-100">Safety Risk Assessment</div>
+                  <div className="text-[10px] font-medium uppercase tracking-[0.25em] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{agentResponse.safety_risk_assessment?.risk_level || 'Unknown'}</div>
+                </div>
+                <div className="mt-3 text-sm leading-6 text-slate-300">{agentResponse.safety_risk_assessment?.primary_risk || 'No agent response loaded.'}</div>
+              </div>
+
+              <div className="grid gap-2 md:grid-cols-2">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-sm font-semibold text-slate-100 mb-3">Visual Analysis</div>
+                  <div className="space-y-2 text-sm text-slate-300">
+                    {visualItems.length > 0 ? visualItems.map((item, idx) => (
+                      <div key={idx} className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">{item}</div>
+                    )) : <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">No visual analysis available.</div>}
+                  </div>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-sm font-semibold text-slate-100 mb-3">Audio Analysis</div>
+                  <div className="space-y-2 text-sm text-slate-300">
+                    {audioItems.length > 0 ? audioItems.map((item, idx) => (
+                      <div key={idx} className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">{item}</div>
+                    )) : <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">No audio analysis available.</div>}
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/80 p-3 text-sm text-slate-300">
+                    <div className="text-slate-100 font-semibold mb-2">Fusion</div>
+                    {agentResponse.detailed_analysis?.fusion || 'No fusion analysis available.'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2 md:grid-cols-2">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-sm font-semibold text-slate-100 mb-3">Possible Causes</div>
+                  {agentResponse.possible_causes?.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-2 text-sm text-slate-300">
+                      {agentResponse.possible_causes.map((cause, idx) => <li key={idx}>{cause}</li>)}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-slate-500">No possible causes available.</div>
+                  )}
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-sm font-semibold text-slate-100 mb-3">Recommended Actions</div>
+                  {agentResponse.recommended_actions?.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-2 text-sm text-slate-300">
+                      {agentResponse.recommended_actions.map((action, idx) => <li key={idx}>{action}</li>)}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-slate-500">No recommended actions available.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
-function DetailsPage({ selectedAircraft }) {
+function DetailsPage({ selectedAircraft, agentResponses }) {
   if (!selectedAircraft) return null;
-  
+
   const tone = getStatusTone(selectedAircraft.status);
+  const responseKey = normalizeEvtolId(selectedAircraft.id);
+  const inlineAgent = selectedAircraft.agent || selectedAircraft?.agenticGuard || null;
+  const agentResp = inlineAgent || agentResponses[responseKey] || null;
   return <section className="grid grid-cols-[1.02fr_0.98fr] gap-2">
-    <ComponentsDataPanel aircraft={selectedAircraft} />
+    <ComponentsDataPanel aircraft={selectedAircraft} agentResponse={agentResp} />
     <div className="grid min-w-0 gap-2">
       <div className="rounded-3xl border border-white/10 bg-[#07111f]/90 p-2.5">
         <div className="mb-3 flex items-start justify-between gap-2"><div><div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">PdM Data</div><div className="mt-1 text-xl font-semibold text-white">{selectedAircraft.id} RUL Predictive Matrix</div></div><div className={cn('rounded-full px-2 py-1 text-[10px] font-medium', tone.chip)}>{selectedAircraft.pdm.riskLevel} Risk</div></div>
@@ -595,9 +722,22 @@ export default function App() {
   });
   const [activePage, setActivePage] = useState('home');
   const [selectedId, setSelectedId] = useState('EVTOL-01');
+  const [agentResponses, setAgentResponses] = useState({});
   const liveFleetData = useSimulatedFleet(evtolFleet);
   const currentAircraft = liveFleetData.find(a => a.id === selectedId) || liveFleetData[0];
   const fleetStats = useMemo(() => ({ avgHealth: Math.round(liveFleetData.reduce((s,i)=>s+i.health,0)/liveFleetData.length), activeWarnings: liveFleetData.filter(i=>i.status==='Warning').length, avgTemp: Math.round(liveFleetData.reduce((s,i)=>s+i.temperature,0)/liveFleetData.length) }), [liveFleetData]);
+
+  useEffect(() => {
+    fetch('/agent-response.txt')
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to load agent responses: ${response.status}`);
+        return response.text();
+      })
+      .then((text) => setAgentResponses(parseAgentResponseFile(text)))
+      .catch((error) => {
+        console.warn('Unable to load agent responses:', error);
+      });
+  }, []);
   if (!isLoggedIn) return <LoginPage onLogin={() => {
     setIsLoggedIn(true);
     setActivePage('home');
@@ -622,7 +762,7 @@ export default function App() {
             } catch (e) {}
           }}
         />
-        <div className="min-w-0 pb-12">{activePage==='home' && <HomePage fleet={liveFleetData} selectedAircraft={currentAircraft} setSelectedAircraft={(a) => setSelectedId(a.id)} setActivePage={setActivePage} />} {activePage==='twins' && <TwinsPage selectedAircraft={currentAircraft} fleet={liveFleetData} setSelectedAircraft={(a) => setSelectedId(a.id)} />} {activePage==='details' && <DetailsPage selectedAircraft={currentAircraft} />} {activePage==='settings' && <SettingsPage />}</div>
+        <div className="min-w-0 pb-12">{activePage==='home' && <HomePage fleet={liveFleetData} selectedAircraft={currentAircraft} setSelectedAircraft={(a) => setSelectedId(a.id)} setActivePage={setActivePage} />} {activePage==='twins' && <TwinsPage selectedAircraft={currentAircraft} fleet={liveFleetData} setSelectedAircraft={(a) => setSelectedId(a.id)} />} {activePage==='details' && <DetailsPage selectedAircraft={currentAircraft} agentResponses={agentResponses} />} {activePage==='settings' && <SettingsPage />}</div>
       </main>
     </div>
   </div>;

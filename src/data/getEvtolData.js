@@ -1,21 +1,33 @@
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, onValue } from 'firebase/database';
+import evtolData from './evtolData';
 
 const firebaseConfig = {
-  databaseURL: "https://ascendo-nexus-os-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  // other config...
+  databaseURL: 'https://ascendo-nexus-os-default-rtdb.asia-southeast1.firebasedatabase.app/',
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const path = ref(db, "telemetry/2018-02-05/15-16-24-013052");
+export function streamEvtolData(setEvtolData) {
+  const path = ref(db, 'telemetry/2018-02-05/15-16-24_013052');
 
-onValue(path, (snapshot) => {
-  if (snapshot.exists()) {
+  onValue(path, (snapshot) => {
+    if (!snapshot.exists()) return;
+
     const data = snapshot.val();
-    console.log("battery:", data.battery);
-  } else {
-    console.log("No data");
-  }
-});
+    const battery = data.battery || {};
+    const motor = data.motor || {};
+
+    setEvtolData((prev) => ({
+      ...prev,
+      soc: battery.soc ?? prev.soc,
+      temperature: battery.Cell_Temperature_C ?? prev.temperature,
+      batteryCycles: battery.Cycle_Index ?? prev.batteryCycles,
+      vibration: motor.vibration ?? prev.vibration,
+      motorRpm: motor.rpm ?? motor.motorRpm ?? prev.motorRpm,
+    }));
+  });
+}
+
+export default evtolData;

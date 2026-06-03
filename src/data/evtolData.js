@@ -8,7 +8,7 @@ export const evtolFleet = [
     health: 96,
     soc: 82,
     temperature: 54,
-    rul: 118,
+    rul: 1180,
     altitude: 320,
     speed: 88,
     mission: 'South Bay Shuttle',
@@ -53,6 +53,33 @@ export const evtolFleet = [
         { t: '08:25', temp: 54, vib: 32, rpm: 5820 },
       ],
     },
+    agent: {
+      "safety_risk_assessment": {
+        "risk_level": "Low",
+        "primary_risk": "No immediate safety risks detected during the observed flight segment."
+      },
+      "detailed_analysis": {
+        "visual": {
+          "pilot_status": "✅ Attentive, hands on controls, no signs of fatigue or distraction.",
+          "cockpit_environment": "✅ Clean, no visible smoke, debris, or structural damage.",
+          "instrument_display": "✅ Digital displays active and clear, showing navigation data."
+        },
+        "audio": {
+          "mechanical_noises": "✅ Consistent rotor hum, no unusual clanking or grinding.",
+          "alarms": "❌ None detected (good).",
+          "pilot_communication": "✅ No audible stress or urgent vocalizations."
+        },
+        "fusion": "Pilot appears competent and environment stable; all systems functioning nominally."
+      },
+      "possible_causes": [
+        "Routine urban eVTOL transit.",
+        "Normal pre-programmed flight path execution."
+      ],
+      "recommended_actions": [
+        "Continue monitoring for next visual/audio anomaly.",
+        "Verify pre-flight checklist completion upon landing."
+      ],
+    }
   },
   {
     id: 'EVTOL-02',
@@ -63,7 +90,7 @@ export const evtolFleet = [
     health: 91,
     soc: 76,
     temperature: 61,
-    rul: 84,
+    rul: 840,
     altitude: 410,
     speed: 94,
     mission: 'Coastal Scan',
@@ -108,6 +135,31 @@ export const evtolFleet = [
         { t: '08:25', temp: 61, vib: 41, rpm: 5680 },
       ],
     },
+    agent:{
+      "safety_risk_assessment": {
+        "risk_level": "Medium",
+        "primary_risk": "Pilot appears fatigued and distracted, potentially compromising situational awareness"
+      },
+      "detailed_analysis": {
+        "visual": {
+          "pilot_status": "⚠️ Fatigued (yawning), distracted (adjusting headset, looking away from controls)",
+          "environment": "✅ Clear view outside, no immediate structural or environmental hazards visible"
+        },
+        "audio": {
+          "mechanical_noises": "✅ Normal rotor sounds, no alarms",
+          "pilot_communication": "⚠️ No active communication observed, but possible fatigue-related mumbling"
+        },
+        "fusion": "Pilot's yawning and distraction from primary controls may lead to delayed response to changing flight conditions."
+      },
+      "possible_causes": [
+        "Pilot fatigue during long flight",
+        "Cabin noise causing distraction"
+      ],
+      "recommended_actions": [
+        "Immediate: Pilot should focus on controls and confirm communication protocol",
+        "Follow-up: Flight operations should monitor for further signs of fatigue"
+      ],
+    }
   },
   {
     id: 'EVTOL-03',
@@ -118,7 +170,7 @@ export const evtolFleet = [
     health: 87,
     soc: 68,
     temperature: 67,
-    rul: 46,
+    rul: 460,
     altitude: 280,
     speed: 79,
     mission: 'Rapid Response',
@@ -163,6 +215,34 @@ export const evtolFleet = [
         { t: '08:25', temp: 67, vib: 58, rpm: 5460 },
       ],
     },
+    agent: {
+      "safety_risk_assessment": {
+        "risk_level": "High",
+        "primary_risk": "Smoke filling cockpit indicates possible engine or electrical fire"
+      },
+      "detailed_analysis": {
+        "visual": {
+          "pilot": "⚠️ Seemingly calm but environment is hazardous",
+          "passenger": "⚠️ Covering mouth, appears distressed",
+          "cabin_environment": "❌ Heavy smoke with red glow, possible fire",
+          "instruments": "✅ Visible but obscured by smoke"
+        },
+        "audio": {
+          "mechanical_noises": "⚠️ Unusual hissing/smoldering sounds",
+          "pilot_voice": "✅ Clear but urgent commands",
+          "passenger_sounds": "⚠️ Muffled coughing/gasping"
+        },
+        "fusion": "Active smoke and red glow strongly suggest an in-flight fire requiring immediate emergency response"
+      },
+      "possible_causes": [
+        "Engine compartment fire",
+        "Electrical short circuit"
+      ],
+      "recommended_actions": [
+        "Initiate emergency fire suppression protocol",
+        "Evacuate all occupants immediately"
+      ],
+    }
   },
   {
     id: 'EVTOL-04',
@@ -173,7 +253,7 @@ export const evtolFleet = [
     health: 94,
     soc: 79,
     temperature: 57,
-    rul: 102,
+    rul: 1020,
     altitude: 360,
     speed: 91,
     mission: 'Cargo Relay',
@@ -218,6 +298,33 @@ export const evtolFleet = [
         { t: '08:25', temp: 57, vib: 35, rpm: 5740 },
       ],
     },
+    agent: {
+      "safety_risk_assessment": {
+        "risk_level": "Low",
+        "primary_risk": "No immediate safety threats detected."
+      },
+      "detailed_analysis": {
+        "visual": {
+          "pilot_status": "✅ Focused, hands on controls, no signs of fatigue or distraction.",
+          "cockpit_instruments": "✅ All displays active, no visible errors or warnings.",
+          "cabin_environment": "✅ Clear view outside, no smoke or debris detected."
+        },
+        "audio": {
+          "mechanical_noises": "✅ Consistent engine hum, no unusual grinding or clanking.",
+          "alarms": "❌ None detected (good).",
+          "pilot_communication": "✅ Calm, controlled tone."
+        },
+        "fusion": "Pilot appears competent and environment stable with no detected anomalies."
+      },
+      "possible_causes": [
+        "Normal pre-flight or cruise phase operation.",
+        "Routine system checks being performed."
+      ],
+      "recommended_actions": [
+        "Continue monitoring for any sudden changes in audio or visual indicators.",
+        "Verify all systems remain stable during next scheduled check."
+      ],
+    }
   },
 ];
 

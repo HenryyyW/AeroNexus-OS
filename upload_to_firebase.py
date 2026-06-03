@@ -3,7 +3,7 @@ from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, db
 
-SERVICE_ACCOUNT_PATH = "ascendo-nexus-os-firebase-adminsdk-fbsvc-489f3b505d.json"
+SERVICE_ACCOUNT_PATH = "ascendo-nexus-os-firebase-adminsdk-fbsvc-9334452d6e.json"
 DATABASE_URL = "https://ascendo-nexus-os-default-rtdb.asia-southeast1.firebasedatabase.app/"
 FILE_PATH = "./rawdata/SNL_18650_LFP_25C_0-100_0.5-2C_a_timeseries.txt"
 
