@@ -102,6 +102,16 @@ function normalizeEvtolId(label) {
   return `EVTOL-${match[1].padStart(2, '0')}`;
 }
 
+function parseAnalysisItem(item = '') {
+  const trimmed = item.trim();
+  const withoutEmoji = trimmed.replace(/^[\u2705\u2714\u2716\u2717\u2718\u274C\u274E\u26A0\u26A0\uFE0F!x×✕✖]+\s*/i, '');
+  let level = 'neutral';
+  if (/^[✅✔]/.test(trimmed)) level = 'success';
+  else if (/^[⚠!]/.test(trimmed)) level = 'warning';
+  else if (/^[❌x×✕✖]/.test(trimmed)) level = 'danger';
+  return { text: withoutEmoji, level };
+}
+
 function parseAgentResponseFile(rawText) {
   const responses = {};
   const normalizedText = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -275,7 +285,7 @@ function FleetCard({ aircraft, selected, onClick }) {
   const tone = getStatusTone(aircraft.status);
   return <button onClick={onClick} className={cn('group flex h-full min-h-[200px] flex-col rounded-3xl border p-2.5 text-left transition-colors', selected ? 'border-cyan-400/50 bg-cyan-400/10' : 'border-white/10 bg-[#08111d]/85 hover:border-cyan-500/30 hover:bg-cyan-500/5')}>
     <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Aircraft</div><div className="mt-1 text-[clamp(1rem,1.4vw,1.5rem)] font-bold text-white tracking-tight truncate">{aircraft.displayName}</div><div className="mt-1  text-xs text-slate-400">{aircraft.id} · {aircraft.model}</div></div><div className={cn('shrink-0 rounded-full px-2 py-1 text-[10px] font-medium', tone.chip)}>{aircraft.status}</div></div>
-    <div className="mt-4 grid grid-cols-2 gap-2"><MetricPill label="Health" value={`${aircraft.health}%`} tone={aircraft.health < 90 ? 'danger' : 'ok'} /><MetricPill label="SoC" value={`${aircraft.soc}%`} /><MetricPill label="Temp" value={`${aircraft.temperature}°C`} tone={aircraft.temperature >= 65 ? 'danger' : 'warn'} /><MetricPill label="RUL" value={`${aircraft.rul} min`} tone={aircraft.rul < 60 ? 'danger' : 'ok'} /></div>
+    <div className="mt-4 grid grid-cols-2 gap-2"><MetricPill label="Health" value={`${aircraft.health}%`} tone={aircraft.health < 90 ? 'danger' : 'ok'} /><MetricPill label="SoC" value={`${aircraft.soc}%`} /><MetricPill label="Temp" value={`${aircraft.temperature}°C`} tone={aircraft.temperature >= 65 ? 'danger' : 'warn'} /><MetricPill label="RUL" value={`${aircraft.rul} days`} tone={aircraft.rul < 60 ? 'danger' : 'ok'} /></div>
     <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-2.5"><div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">Mission</div><div className="mt-1 text-sm font-medium text-slate-200">{aircraft.mission}</div><div className="mt-1 text-xs text-slate-400">{aircraft.role}</div></div>
     <div className="mt-auto flex items-center justify-between pt-3 text-xs"><span className="text-slate-400">Access Asset Telemetry</span><span className="flex items-center gap-1 text-cyan-300">Diagnose <ChevronRight size={14} /></span></div>
   </button>;
@@ -343,33 +353,83 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
     frameId = requestAnimationFrame(animate); 
     return () => cancelAnimationFrame(frameId); 
   }, [aircraft, showAll, fleet]);
-  return <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#06101b] bg-cover bg-center" style={{ backgroundImage: "url('/map-bg2.jpg')" }}>
-    <div className="absolute inset-0 bg-[#06101b]/60" />
-    {!hideLabel && <div className="absolute left-3 top-2.5 z-10 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">Airspace Trajectory Map</div>}
-    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 400 320" preserveAspectRatio="none">
-      <defs><linearGradient id="routeStroke" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#00f0ff" /><stop offset="100%" stopColor="#37f29b" /></linearGradient></defs>
-      {(showAll ? fleet : [aircraft]).map(item => {
-        const active = item.id === aircraft.id;
-        const startPoint = item.route?.[0] || {x: 0, y: 0};
-        const endPoint = item.route?.[item.route.length - 1] || {x: 0, y: 0};
-        return (
-          <g key={`${item.id}-path`}>
-            <path 
-              d={`M ${(item.route || []).map(p => `${p.x} ${p.y}`).join(' L ')}`} 
-              fill="none" 
-              stroke={active ? (showAll ? '#00f0ff' : 'url(#routeStroke)') : 'rgba(255,255,255,.22)'} 
-              strokeWidth={active ? 2.4 : 1.1} 
-              strokeDasharray="5 6" 
-              opacity="0.9" 
-            />
-            <circle cx={startPoint.x} cy={startPoint.y} r={active ? "4.5" : "3.5"} fill={active ? '#00f0ff' : '#7a8aa0'} />
-            <circle cx={endPoint.x} cy={endPoint.y} r={active ? "4.5" : "3.5"} fill={active ? '#37f29b' : '#7a8aa0'} />
-          </g>
-        );
-      })}
-      {(showAll ? fleet : [aircraft]).map(item => { const currentPos = positions[item.id] || item.route?.[0] || {x:0, y:0}; const active = item.id===aircraft.id; return <g key={`${item.id}-marker`} transform={`translate(${currentPos.x}, ${currentPos.y})`} style={{ cursor: onSelectAircraft ? 'pointer' : 'default' }} onClick={() => onSelectAircraft && onSelectAircraft(item)}><circle cx="0" cy="0" r={active?6:4.5} fill={item.status === 'Warning' ? '#ff4d6d' : (active ? '#37f29b' : '#94a3b8')} /><circle cx="0" cy="0" r={active?15:9} fill="none" stroke={item.status === 'Warning' ? '#ff4d6d' : (active ? '#37f29b' : '#64748b')} strokeWidth="1.5" opacity="0.7">{item.status === 'Warning' && <animate attributeName="r" values="9; 18; 9" dur="1.5s" repeatCount="indefinite" />}{item.status === 'Warning' && <animate attributeName="opacity" values="0.8; 0; 0.8" dur="1.5s" repeatCount="indefinite" />}</circle><text x="10" y="-8" fill={item.status === 'Warning' ? '#ff4d6d' : (active ? '#37f29b' : '#cbd5e1')} fontSize="9" fontFamily="monospace">{item.id}</text></g>; })}
-    </svg>
-  </div>;
+  const leafletMapRef = useRef(null);
+  const leafletInstanceRef = useRef(null);
+
+  useEffect(() => {
+    // Initialize Leaflet map once the script has loaded
+    if (!leafletMapRef.current || typeof window === 'undefined') return;
+    const L = window.L;
+    if (!L) return; // Leaflet not loaded yet (CDN script deferred)
+    if (leafletInstanceRef.current) return;
+
+    try {
+      // Center map on Victoria Harbour (lat, lon)
+      leafletInstanceRef.current = L.map(leafletMapRef.current, { attributionControl: false, zoomControl: true, scrollWheelZoom: false }).setView([22.293, 114.174], 14);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(leafletInstanceRef.current);
+    } catch (e) {
+      console.warn('Leaflet init failed', e);
+    }
+
+    return () => {
+      if (leafletInstanceRef.current) {
+        try { leafletInstanceRef.current.remove(); } catch (e) {}
+        leafletInstanceRef.current = null;
+      }
+    };
+  }, [leafletMapRef]);
+  return (
+    <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20">
+      {/* Leaflet map container (demo only) */}
+      <div ref={leafletMapRef} className="absolute inset-0 z-0" />
+      <div className="absolute inset-0 bg-[#06101b]/40 pointer-events-none" />
+      {!hideLabel && (
+        <div className="absolute left-3 top-2.5 z-20 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">Airspace Trajectory Map</div>
+      )}
+
+      {/* SVG overlay for demo routes (coordinates are visual-only) */}
+      <div className="absolute inset-0 z-10 pointer-events-auto">
+        <svg className="h-full w-full" viewBox="0 0 400 320" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="routeStroke" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#00f0ff" /><stop offset="100%" stopColor="#37f29b" /></linearGradient>
+          </defs>
+          {(showAll ? fleet : [aircraft]).map(item => {
+            const active = item.id === aircraft.id;
+            const startPoint = item.route?.[0] || { x: 0, y: 0 };
+            const endPoint = item.route?.[item.route.length - 1] || { x: 0, y: 0 };
+            return (
+              <g key={`${item.id}-path`}>
+                <path
+                  d={`M ${(item.route || []).map(p => `${p.x} ${p.y}`).join(' L ')}`}
+                  fill="none"
+                  stroke={active ? (showAll ? '#00f0ff' : 'url(#routeStroke)') : 'rgba(255,255,255,.22)'}
+                  strokeWidth={active ? 2.4 : 1.1}
+                  strokeDasharray="5 6"
+                  opacity="0.9"
+                />
+                <circle cx={startPoint.x} cy={startPoint.y} r={active ? "4.5" : "3.5"} fill={active ? '#00f0ff' : '#7a8aa0'} />
+                <circle cx={endPoint.x} cy={endPoint.y} r={active ? "4.5" : "3.5"} fill={active ? '#37f29b' : '#7a8aa0'} />
+              </g>
+            );
+          })}
+          {(showAll ? fleet : [aircraft]).map(item => {
+            const currentPos = positions[item.id] || item.route?.[0] || { x: 0, y: 0 };
+            const active = item.id === aircraft.id;
+            return (
+              <g key={`${item.id}-marker`} transform={`translate(${currentPos.x}, ${currentPos.y})`} style={{ cursor: onSelectAircraft ? 'pointer' : 'default' }} onClick={() => onSelectAircraft && onSelectAircraft(item)}>
+                <circle cx="0" cy="0" r={active ? 6 : 4.5} fill={item.status === 'Warning' ? '#ff4d6d' : (active ? '#37f29b' : '#94a3b8')} />
+                <circle cx="0" cy="0" r={active ? 15 : 9} fill="none" stroke={item.status === 'Warning' ? '#ff4d6d' : (active ? '#37f29b' : '#64748b')} strokeWidth="1.5" opacity="0.7">
+                  {item.status === 'Warning' && <animate attributeName="r" values="9; 18; 9" dur="1.5s" repeatCount="indefinite" />}
+                  {item.status === 'Warning' && <animate attributeName="opacity" values="0.8; 0; 0.8" dur="1.5s" repeatCount="indefinite" />}
+                </circle>
+                <text x="10" y="-8" fill={item.status === 'Warning' ? '#ff4d6d' : (active ? '#37f29b' : '#cbd5e1')} fontSize="9" fontFamily="monospace">{item.id}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 function TwinsPage({ selectedAircraft, fleet, setSelectedAircraft }) {
@@ -429,8 +489,8 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
     recommended_actions: [],
   };
 
-  const visualItems = Object.values(agentResponse.detailed_analysis.visual || {});
-  const audioItems = Object.values(agentResponse.detailed_analysis.audio || {});
+  const visualItems = Object.values(agentResponse.detailed_analysis.visual || {}).map(parseAnalysisItem);
+  const audioItems = Object.values(agentResponse.detailed_analysis.audio || {}).map(parseAnalysisItem);
 
   return (
     <div className="flex flex-col rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-5 h-full">
@@ -548,7 +608,10 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
                   <div className="text-sm font-semibold text-slate-100 mb-3">Visual Analysis</div>
                   <div className="space-y-2 text-sm text-slate-300">
                     {visualItems.length > 0 ? visualItems.map((item, idx) => (
-                      <div key={idx} className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">{item}</div>
+                      <div key={idx} className={cn('rounded-2xl border p-2 flex items-start gap-3', item.level === 'danger' ? 'border-red-500/30 bg-red-500/10 text-red-100' : item.level === 'warning' ? 'border-amber-500/30 bg-amber-500/10 text-amber-100' : item.level === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100' : 'border-white/10 bg-slate-950/80 text-slate-200')}>
+                        <span className={cn('mt-1 h-2.5 w-2.5 rounded-full', item.level === 'danger' ? 'bg-red-400' : item.level === 'warning' ? 'bg-amber-300' : item.level === 'success' ? 'bg-emerald-300' : 'bg-slate-500')} />
+                        <span>{item.text}</span>
+                      </div>
                     )) : <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">No visual analysis available.</div>}
                   </div>
                 </div>
@@ -556,7 +619,10 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
                   <div className="text-sm font-semibold text-slate-100 mb-3">Audio Analysis</div>
                   <div className="space-y-2 text-sm text-slate-300">
                     {audioItems.length > 0 ? audioItems.map((item, idx) => (
-                      <div key={idx} className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">{item}</div>
+                      <div key={idx} className={cn('rounded-2xl border p-2 flex items-start gap-3', item.level === 'danger' ? 'border-red-500/30 bg-red-500/10 text-red-100' : item.level === 'warning' ? 'border-amber-500/30 bg-amber-500/10 text-amber-100' : item.level === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100' : 'border-white/10 bg-slate-950/80 text-slate-200')}>
+                        <span className={cn('mt-1 h-2.5 w-2.5 rounded-full', item.level === 'danger' ? 'bg-red-400' : item.level === 'warning' ? 'bg-amber-300' : item.level === 'success' ? 'bg-emerald-300' : 'bg-slate-500')} />
+                        <span>{item.text}</span>
+                      </div>
                     )) : <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">No audio analysis available.</div>}
                   </div>
                   <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/80 p-3 text-sm text-slate-300">

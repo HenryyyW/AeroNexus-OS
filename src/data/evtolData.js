@@ -66,7 +66,7 @@ export const evtolFleet = [
         },
         "audio": {
           "mechanical_noises": "✅ Consistent rotor hum, no unusual clanking or grinding.",
-          "alarms": "❌ None detected (good).",
+          "alarms": "✅ None detected.",
           "pilot_communication": "✅ No audible stress or urgent vocalizations."
         },
         "fusion": "Pilot appears competent and environment stable; all systems functioning nominally."
@@ -311,7 +311,7 @@ export const evtolFleet = [
         },
         "audio": {
           "mechanical_noises": "✅ Consistent engine hum, no unusual grinding or clanking.",
-          "alarms": "❌ None detected (good).",
+          "alarms": "✅ None detected.",
           "pilot_communication": "✅ Calm, controlled tone."
         },
         "fusion": "Pilot appears competent and environment stable with no detected anomalies."
