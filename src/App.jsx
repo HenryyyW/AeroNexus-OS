@@ -364,9 +364,30 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
     if (leafletInstanceRef.current) return;
 
     try {
-      // Center map on Victoria Harbour (lat, lon)
-      leafletInstanceRef.current = L.map(leafletMapRef.current, { attributionControl: false, zoomControl: true, scrollWheelZoom: false }).setView([22.293, 114.174], 14);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(leafletInstanceRef.current);
+        // Center map on Victoria Harbour (lat, lon) — disable interactive zoom handlers so SVG overlay stays aligned
+        // create map without default zoom control, we'll add one positioned at top-right
+        leafletInstanceRef.current = L.map(leafletMapRef.current, {
+          attributionControl: false,
+          zoomControl: false,
+          scrollWheelZoom: false,
+          doubleClickZoom: false,
+          boxZoom: false,
+          touchZoom: false,
+          keyboard: false,
+          dragging: true,
+        }).setView([22.293, 114.174], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(leafletInstanceRef.current);
+        // add zoom control at top-right
+        try { L.control.zoom({ position: 'topright' }).addTo(leafletInstanceRef.current); } catch (e) {}
+
+        // Ensure zoom handlers are disabled (defensive)
+        try {
+          leafletInstanceRef.current.scrollWheelZoom.disable();
+          leafletInstanceRef.current.doubleClickZoom.disable();
+          leafletInstanceRef.current.boxZoom.disable();
+          leafletInstanceRef.current.touchZoom.disable();
+          leafletInstanceRef.current.keyboard.disable();
+        } catch (e) {}
     } catch (e) {
       console.warn('Leaflet init failed', e);
     }
@@ -388,7 +409,8 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
       )}
 
       {/* SVG overlay for demo routes (coordinates are visual-only) */}
-      <div className="absolute inset-0 z-10 pointer-events-auto">
+      {/* make parent non-interactive so Leaflet controls receive clicks; enable pointer-events on interactive marker groups below */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
         <svg className="h-full w-full" viewBox="0 0 400 320" preserveAspectRatio="none">
           <defs>
             <linearGradient id="routeStroke" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#00f0ff" /><stop offset="100%" stopColor="#37f29b" /></linearGradient>
@@ -416,7 +438,7 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
             const currentPos = positions[item.id] || item.route?.[0] || { x: 0, y: 0 };
             const active = item.id === aircraft.id;
             return (
-              <g key={`${item.id}-marker`} transform={`translate(${currentPos.x}, ${currentPos.y})`} style={{ cursor: onSelectAircraft ? 'pointer' : 'default' }} onClick={() => onSelectAircraft && onSelectAircraft(item)}>
+              <g key={`${item.id}-marker`} transform={`translate(${currentPos.x}, ${currentPos.y})`} style={{ cursor: onSelectAircraft ? 'pointer' : 'default', pointerEvents: onSelectAircraft ? 'auto' : 'none' }} onClick={() => onSelectAircraft && onSelectAircraft(item)}>
                 <circle cx="0" cy="0" r={active ? 6 : 4.5} fill={item.status === 'Warning' ? '#ff4d6d' : (active ? '#37f29b' : '#94a3b8')} />
                 <circle cx="0" cy="0" r={active ? 15 : 9} fill="none" stroke={item.status === 'Warning' ? '#ff4d6d' : (active ? '#37f29b' : '#64748b')} strokeWidth="1.5" opacity="0.7">
                   {item.status === 'Warning' && <animate attributeName="r" values="9; 18; 9" dur="1.5s" repeatCount="indefinite" />}
