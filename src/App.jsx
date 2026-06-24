@@ -355,6 +355,8 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
   }, [aircraft, showAll, fleet]);
   const leafletMapRef = useRef(null);
   const leafletInstanceRef = useRef(null);
+  const detectorsLayerRef = useRef(null);
+  const [showDetectors, setShowDetectors] = useState(true);
 
   useEffect(() => {
     // Initialize Leaflet map once the script has loaded
@@ -375,7 +377,7 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
           touchZoom: false,
           keyboard: false,
           dragging: true,
-        }).setView([22.293, 114.174], 14);
+        }).setView([22.303, 114.194], 13);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(leafletInstanceRef.current);
         // add zoom control at top-right
         try { L.control.zoom({ position: 'topright' }).addTo(leafletInstanceRef.current); } catch (e) {}
@@ -392,6 +394,33 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
       console.warn('Leaflet init failed', e);
     }
 
+    // after init, load detectors GeoJSON
+    (async () => {
+      try {
+        const res = await fetch('/Traffic_Detectors_SLP_gdb_Traffic_Detectors_SLP_converted.geojson');
+        if (!res.ok) return;
+        const geojson = await res.json();
+        const pointToLayer = (feature, latlng) => {
+          // center marker + halo for visibility
+          const center = L.circleMarker(latlng, { radius: 6, fillColor: '#ff4d6d', color: '#ff4d6d', weight: 1, fillOpacity: 1 });
+          const halo = L.circle(latlng, { radius: 40, stroke: false, fillColor: '#ff4d6d', fillOpacity: 0.08 });
+          return L.layerGroup([halo, center]);
+        };
+        const onEachFeature = (feature, layer) => {
+          const props = feature.properties || {};
+          const popupHtml = Object.keys(props).length ? `<div style="max-width:240px"><strong>${props.name || props.id || props.ID || ''}</strong><br/><pre style="white-space:pre-wrap;margin:6px 0 0 0;font-size:12px">${JSON.stringify(props, null, 2)}</pre></div>` : 'Traffic detector';
+          layer.bindPopup(popupHtml);
+        };
+        detectorsLayerRef.current = L.geoJSON(geojson, { pointToLayer, onEachFeature });
+        if (showDetectors && detectorsLayerRef.current) {
+          detectorsLayerRef.current.addTo(leafletInstanceRef.current);
+          try { leafletInstanceRef.current.fitBounds(detectorsLayerRef.current.getBounds(), { maxZoom: 18 }); } catch (e) {}
+        }
+      } catch (e) {
+        console.warn('Failed to load detectors geojson', e);
+      }
+    })();
+
     return () => {
       if (leafletInstanceRef.current) {
         try { leafletInstanceRef.current.remove(); } catch (e) {}
@@ -399,6 +428,16 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
       }
     };
   }, [leafletMapRef]);
+
+  // toggle detectors layer
+  useEffect(() => {
+    if (!leafletInstanceRef.current || !detectorsLayerRef.current) return;
+    if (showDetectors) {
+      try { detectorsLayerRef.current.addTo(leafletInstanceRef.current); } catch (e) {}
+    } else {
+      try { detectorsLayerRef.current.remove(); } catch (e) {}
+    }
+  }, [showDetectors]);
   return (
     <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20">
       {/* Leaflet map container (demo only) */}
@@ -407,6 +446,8 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
       {!hideLabel && (
         <div className="absolute left-3 top-2.5 z-20 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">Airspace Trajectory Map</div>
       )}
+
+      {/* detectors toggle removed — layer shown by default */}
 
       {/* SVG overlay for demo routes (coordinates are visual-only) */}
       {/* make parent non-interactive so Leaflet controls receive clicks; enable pointer-events on interactive marker groups below */}

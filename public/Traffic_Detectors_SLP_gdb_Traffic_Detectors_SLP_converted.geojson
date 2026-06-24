@@ -1,0 +1,366 @@
+{
+	"type" : "FeatureCollection",
+	"name" : "Traffic_Detectors_SLP",
+	"features" : [
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.2243835938, 22.3150313458 ]
+			},
+			"properties" : {
+				"OBJECTID" : 1,
+				"AID_ID_Number" : "AID20011",
+				"District" : "Kwun Tong",
+				"Road_EN" : "Mut Wah Street near Fu Yan Street - Eastbound [AID20011]",
+				"Road_TC" : "物華街近輔仁街 - 東行 [AID20011]",
+				"Road_SC" : "物华街近辅仁街 - 东行 [AID20011]",
+				"Direction" : "East",
+				"Rotation" : 105,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.2253541757, 22.3150762113 ]
+			},
+			"properties" : {
+				"OBJECTID" : 2,
+				"AID_ID_Number" : "AID20012",
+				"District" : "Kwun Tong",
+				"Road_EN" : "Mut Wah Street near Hip Wo Street - Westbound [AID20012]",
+				"Road_TC" : "物華街近協和街 - 西行 [AID20011]",
+				"Road_SC" : "物华街近协和街 - 西行 [AID20011]",
+				"Direction" : "West",
+				"Rotation" : 255,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1736331216, 22.2949722702 ]
+			},
+			"properties" : {
+				"OBJECTID" : 3,
+				"AID_ID_Number" : "AID20021",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Salisbury Road near Middle Road - Eastbound [AID20021]",
+				"Road_TC" : "梳士巴利道近中間道 - 東行[AID20021]",
+				"Road_SC" : "梳士巴利道近中间道 - 东行[AID20021]",
+				"Direction" : "East",
+				"Rotation" : 90,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1705471704, 22.2947464146 ]
+			},
+			"properties" : {
+				"OBJECTID" : 4,
+				"AID_ID_Number" : "AID20022",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Salisbury Road near Kowloon Park Drive - Eastbound [AID20022]",
+				"Road_TC" : "梳士巴利道近九龍公園徑 - 東行[AID20022]",
+				"Road_SC" : "梳士巴利道近九龙公园径 - 东行[AID20022]",
+				"Direction" : "East",
+				"Rotation" : 90,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1740115944, 22.2946832973 ]
+			},
+			"properties" : {
+				"OBJECTID" : 5,
+				"AID_ID_Number" : "AID20023",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Salisbury Road near Middle Road - Westbound [AID20023]",
+				"Road_TC" : "梳士巴利道近中間道 - 西行[AID20023]",
+				"Road_SC" : "梳士巴利道近中间道 - 西行[AID20023]",
+				"Direction" : "West",
+				"Rotation" : 270,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1709547593, 22.2945116337 ]
+			},
+			"properties" : {
+				"OBJECTID" : 6,
+				"AID_ID_Number" : "AID20024",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Salisbury Road near Kowloon Park Drive - Westbound [AID20024]",
+				"Road_TC" : "梳士巴利道近九龍公園徑 - 西行[AID20024]",
+				"Road_SC" : "梳士巴利道近九龙公园径 - 西行[AID20024]",
+				"Direction" : "West",
+				"Rotation" : 270,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.2258390997, 22.3140465773 ]
+			},
+			"properties" : {
+				"OBJECTID" : 7,
+				"AID_ID_Number" : "AID20030",
+				"District" : "Kwun Tong",
+				"Road_EN" : "Hip Wo Street near Tung Yan Street - Northbound [AID20030]",
+				"Road_TC" : "協和街近同仁街 - 北行 [AID20030]",
+				"Road_SC" : "协和街近同仁街 - 北行 [AID20030]",
+				"Direction" : "North",
+				"Rotation" : 345,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.2258683742, 22.3144980984 ]
+			},
+			"properties" : {
+				"OBJECTID" : 8,
+				"AID_ID_Number" : "AID20031",
+				"District" : "Kwun Tong",
+				"Road_EN" : "Hip Wo Street near Mut Wah Street - Southbound [AID20031]",
+				"Road_TC" : "協和街近物華街 - 南行 [AID20031]",
+				"Road_SC" : "协和街近物华街 - 南行 [AID20031]",
+				"Direction" : "South",
+				"Rotation" : 165,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.2236361733, 22.3147787065 ]
+			},
+			"properties" : {
+				"OBJECTID" : 9,
+				"AID_ID_Number" : "AID20032",
+				"District" : "Kwun Tong",
+				"Road_EN" : "Hong Ning Road near Mut Wah Street - Northbound [AID20032]",
+				"Road_TC" : "康寧道近物華街 - 北行 [AID20032]",
+				"Road_SC" : "康宁道近物华街 - 北行 [AID20032]",
+				"Direction" : "North",
+				"Rotation" : 90,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.2233844135, 22.316548776 ]
+			},
+			"properties" : {
+				"OBJECTID" : 10,
+				"AID_ID_Number" : "AID20033",
+				"District" : "Kwun Tong",
+				"Road_EN" : "Hong Ning Road near Ming Chi Street - Southbound [AID20033]",
+				"Road_TC" : "康寧道近明智街 - 南行 [AID20033]",
+				"Road_SC" : "康宁道近明智街 - 南行 [AID20033]",
+				"Direction" : "South",
+				"Rotation" : 165,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1768937534, 22.2807942135 ]
+			},
+			"properties" : {
+				"OBJECTID" : 11,
+				"AID_ID_Number" : "AID20051",
+				"District" : "Wan Chai",
+				"Road_EN" : "Harbour Road near Tonnochy Road - Westbound [AID20051]",
+				"Road_TC" : "港灣道近杜老誌道 - 西行 [AID20051]",
+				"Road_SC" : "港湾道近杜老志道 - 西行 [AID20051]",
+				"Direction" : "West",
+				"Rotation" : 270,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1754091478, 22.2808212992 ]
+			},
+			"properties" : {
+				"OBJECTID" : 12,
+				"AID_ID_Number" : "AID20052",
+				"District" : "Wan Chai",
+				"Road_EN" : "Harbour Road near Fleming Road - Eastbound [AID20052]",
+				"Road_TC" : "港灣道近菲林明道 - 東行 [AID20052]",
+				"Road_SC" : "港湾道近菲林明道 - 东行 [AID20052]",
+				"Direction" : "East",
+				"Rotation" : 90,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.172634009, 22.2806135466 ]
+			},
+			"properties" : {
+				"OBJECTID" : 13,
+				"AID_ID_Number" : "AID20053",
+				"District" : "Wan Chai",
+				"Road_EN" : "Harbour Road near Kong Wan Fire Station - Eastbound [AID20053]",
+				"Road_TC" : "港灣道近港灣消防局 - 東行 [AID20053]",
+				"Road_SC" : "港湾道近港湾消防局 - 东行 [AID20053]",
+				"Direction" : "East",
+				"Rotation" : 90,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1726631229, 22.2804780878 ]
+			},
+			"properties" : {
+				"OBJECTID" : 14,
+				"AID_ID_Number" : "AID20054",
+				"District" : "Wan Chai",
+				"Road_EN" : "Harbour Road near Kong Wan Fire Station - Westbound [AID20054]",
+				"Road_TC" : "港灣道近港灣消防局 - 西行 [AID20054]",
+				"Road_SC" : "港湾道近港湾消防局 - 西行 [AID20054]",
+				"Direction" : "West",
+				"Rotation" : 270,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1722551134, 22.2949812679 ]
+			},
+			"properties" : {
+				"OBJECTID" : 15,
+				"AID_ID_Number" : "AID20055",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Nathan Road near Salisbury Road - Northbound [AID20055]",
+				"Road_TC" : "彌敦道近梳士巴利道 - 北行 [AID20055]",
+				"Road_SC" : "弥敦道近梳士巴利道 - 北行 [AID20055]",
+				"Direction" : "North",
+				"Rotation" : 0,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.172187105, 22.297356319 ]
+			},
+			"properties" : {
+				"OBJECTID" : 16,
+				"AID_ID_Number" : "AID20056",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Nathan Road near Carnarvon Road - Southbound [AID20056]",
+				"Road_TC" : "彌敦道近加拿分道 - 南行 [AID20056]",
+				"Road_SC" : "弥敦道近加拿分道 - 南行 [AID20056]",
+				"Direction" : "South",
+				"Rotation" : 180,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1719055407, 22.3012214147 ]
+			},
+			"properties" : {
+				"OBJECTID" : 17,
+				"AID_ID_Number" : "AID20057",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Nathan Road near Hillwood Road - Northbound [AID20057]",
+				"Road_TC" : "彌敦道近山林道 - 北行 [AID20057]",
+				"Road_SC" : "弥敦道近山林道 - 北行 [AID20057]",
+				"Direction" : "North",
+				"Rotation" : 0,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1718569916, 22.3019438624 ]
+			},
+			"properties" : {
+				"OBJECTID" : 18,
+				"AID_ID_Number" : "AID20058",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Nathan Road near Hillwood Road - Southbound [AID20058]",
+				"Road_TC" : "彌敦道近山林道 - 南行 [AID20058]",
+				"Road_SC" : "弥敦道近山林道 - 南行 [AID20058]",
+				"Direction" : "South",
+				"Rotation" : 180,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.1704889147, 22.2954146783 ]
+			},
+			"properties" : {
+				"OBJECTID" : 19,
+				"AID_ID_Number" : "AID20059",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Kowloon Park Drive near Middle Road - Southbound [AID20059]",
+				"Road_TC" : "九龍公園徑近中間道-南行 [AID20059]",
+				"Road_SC" : "九龙公园径近中间道-南行 [AID20059]",
+				"Direction" : "South",
+				"Rotation" : 165,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 114.170382149, 22.2958120214 ]
+			},
+			"properties" : {
+				"OBJECTID" : 20,
+				"AID_ID_Number" : "AID20060",
+				"District" : "Yau Tsim Mong",
+				"Road_EN" : "Kowloon Park Drive near Salisbury Road - Northbound [AID20060]",
+				"Road_TC" : "九龍公園徑近梳士巴利道-北行 [AID20060]",
+				"Road_SC" : "九龙公园径近梳士巴利道-北行 [AID20060]",
+				"Direction" : "North",
+				"Rotation" : 345,
+				"RawSpeedVolUrl" : "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+			}
+		}
+	]
+}
