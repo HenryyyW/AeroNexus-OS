@@ -2,9 +2,10 @@
 import React, { useEffect, Suspense, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, OrbitControls, useGLTF, Float, Bounds, Center, useAnimations } from '@react-three/drei';
-import { Activity, AlertTriangle, CheckCircle2, ChevronRight, Cpu, Home, Plane, Radar, Settings, Thermometer, Wrench } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, ChevronRight, Cpu, Home, Plane, Radar, Settings, Thermometer, Wrench, Wind } from 'lucide-react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, AreaChart, Area } from 'recharts';
 import { evtolFleet, settingsSections } from './data/evtolData';
+import { weatherStations, getWindDirectionLabel } from './data/weatherStations';
 
 const APP_START_TIME = Date.now();
 const USE_REAL_MODEL = true;
@@ -43,7 +44,63 @@ function LoginPage({ onLogin }) {
   );
 }
 
+function convertToWeatherProxyUrl(originalUrl) {
+  const targetDomain = 'https://data.weather.gov.hk';
+  const proxyPrefix = '/api/weather';
 
+  // 檢查是否以天文台網域開頭
+  if (originalUrl.startsWith(targetDomain)) {
+    // 替換網域為代理前綴
+    return originalUrl.replace(targetDomain, proxyPrefix);
+  }
+  
+  // 如果傳入的已經是相對路徑或不符合，則原樣傳回
+  return originalUrl;
+}
+
+function useWindData(stationUrl) {
+  const [windData, setWindData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (!stationUrl) return;
+    setLoading(true);
+    setError(null);
+    const fetchWindData = async () => {
+      try {
+        const proxyURL = convertToWeatherProxyUrl(stationUrl);
+        const response = await fetch(proxyURL);
+        console.log("response.status= ", response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const csv = await response.text();
+        const lines = csv.trim().split('\n');
+        if (lines.length < 2) {
+          setWindData(null);
+          setError(null);
+          return;
+        }
+        const headers = lines[0].split(',').map(h => h.trim());
+        const lastLine = lines[lines.length - 1].split(',').map(v => v.trim());
+        const data = {};
+        headers.forEach((header, idx) => {
+          data[header] = lastLine[idx];
+        });
+        setWindData(data);
+        setError(null);
+      } catch (err) {
+        console.warn('Failed to fetch wind data:', err);
+        setError('Unable to load wind data');
+        setWindData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchWindData();
+  }, [stationUrl]);
+  return { windData, loading, error };
+}
 
 function useSimulatedFleet(fleet) {
   const [liveFleet, setLiveFleet] = useState(fleet);
@@ -495,17 +552,115 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
   );
 }
 
+function WindPanel({ selectedStationId }) {
+  const station = weatherStations.find(s => s.id === selectedStationId);
+  const { windData, loading, error } = useWindData(station?.url);
+  return (
+    <div className="rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-4 h-full flex flex-col">
+      <div className="mb-4">
+        <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-400/80">Weather Station</div>
+        <h2 className="mt-1 text-lg font-semibold text-white">{station?.name}</h2>
+      </div>
+      {loading && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-slate-400 text-sm">Loading wind data...</div>
+        </div>
+      )}
+      {error && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-red-400 text-sm">{error}</div>
+        </div>
+      )}
+      {windData && !loading && (
+        <div className="flex-1 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Wind Speed</div>
+              <div className="mt-2 text-2xl font-mono text-cyan-300">
+                {windData['10-Minute Mean Speed(km/hour)'] || 'N/A'}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">km/h</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Wind Direction</div>
+              <div className="mt-2 text-2xl font-mono text-emerald-300">
+                {windData['10-Minute Mean Wind Direction(Compass points)'] || 'N/A'}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">Compass</div>
+            </div>
+            {windData['10-Minute Maximum Gust(km/hour)'] && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Max Gust</div>
+                <div className="mt-2 text-2xl font-mono text-amber-300">{windData['10-Minute Maximum Gust(km/hour)']}</div>
+                <div className="text-xs text-slate-400 mt-1">km/h</div>
+              </div>
+            )}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Last Update</div>
+              <div className="mt-2 text-sm font-mono text-slate-300">
+                {windData['Date time (Hour)'] && windData['Date time (Minute)']
+                  ? `${windData['Date time (Hour)']}:${windData['Date time (Minute)'].toString().padStart(2, '0')}`
+                  : 'N/A'}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">HK Time</div>
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 pt-2 border-t border-white/10">
+            {station && (
+              <>
+                <div>Lat: {station.lat.toFixed(4)}</div>
+                <div>Lng: {station.lng.toFixed(4)}</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {!loading && !error && !windData && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-slate-400 text-sm">No data available</div>
+        </div>
+      )}
+    </div>
+  );
+}
+function StationSelector({ selectedStationId, onSelectStation }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-[#07111f]/90 p-4">
+      <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-400/80 mb-3">Select Weather Station</div>
+      <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-2">
+        {weatherStations.map(station => (
+          <button
+            key={station.id}
+            onClick={() => onSelectStation(station.id)}
+            className={cn('rounded-2xl border p-2.5 text-left transition-colors text-sm',
+              selectedStationId === station.id
+                ? 'border-cyan-400/50 bg-cyan-400/10 text-cyan-300'
+                : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-cyan-500/30 hover:bg-cyan-500/5'
+            )}
+          >
+            <div className="font-medium text-xs">{station.name}</div>
+            <div className="text-[10px] text-slate-400 mt-1">{station.nameZh}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function TwinsPage({ selectedAircraft, fleet, setSelectedAircraft }) {
+  const [selectedStationId, setSelectedStationId] = useState(0);
   if (!selectedAircraft) return null;
-  
-  
   return <section className="grid grid-cols-[1.12fr_0.88fr] gap-2">
-    <DigitalTwinViewer aircraft={selectedAircraft} title="Live Asset Replication" />
     <div className="grid min-w-0 gap-2">
-      <AnimatedMap aircraft={selectedAircraft} showAll fleet={fleet} onSelectAircraft={setSelectedAircraft} />
+      <DigitalTwinViewer aircraft={selectedAircraft} title="Live Asset Replication" />
       <div className="grid grid-cols-2 gap-2">
         {fleet.map(item => { const tone = getStatusTone(item.status); const isSelected = item.id === selectedAircraft.id; return <button key={item.id} onClick={() => setSelectedAircraft(item)} className={cn('rounded-3xl border p-2.5 text-left transition-colors', isSelected ? 'border-cyan-400/50 bg-cyan-400/10' : 'border-white/10 bg-[#07111f]/90 hover:border-cyan-500/30 hover:bg-cyan-500/5')}><div className="flex items-center justify-between gap-2"><div className="min-w-0  font-mono text-sm text-white">{item.id}</div><div className={cn('rounded-full px-2 py-1 text-[10px]', tone.chip)}>{item.status}</div></div><div className="mt-2  text-xs text-slate-400">{item.locationLabel}</div><div className="mt-3 grid grid-cols-2 gap-2 text-[10px]"><div className="rounded-xl bg-white/[0.03] p-2 text-slate-300">ALT<div className="mt-1 font-mono text-cyan-300">{Math.round(item.altitude)} m</div></div><div className="rounded-xl bg-white/[0.03] p-2 text-slate-300">SPD<div className="mt-1 font-mono text-cyan-300">{Math.round(item.speed)} km/h</div></div></div></button>; })}
       </div>
+    </div>
+    <div className="grid min-w-0 gap-2" style={{ gridTemplateRows: '1fr 1fr 1fr' }}>
+      <AnimatedMap aircraft={selectedAircraft} showAll fleet={fleet} onSelectAircraft={setSelectedAircraft} />
+      <WindPanel selectedStationId={selectedStationId} />
+      <StationSelector selectedStationId={selectedStationId} onSelectStation={setSelectedStationId} />
     </div>
   </section>;
 }
