@@ -413,7 +413,56 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
   const leafletMapRef = useRef(null);
   const leafletInstanceRef = useRef(null);
   const detectorsLayerRef = useRef(null);
+  const trafficMapRef = useRef({});
   const [showDetectors, setShowDetectors] = useState(true);
+
+  const speedColor = (speed) => {
+    if (speed == null) return '#94a3b8';
+    if (speed >= 50) return '#22c55e';
+    if (speed >= 25) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  const updateDetectorStyles = () => {
+    if (!detectorsLayerRef.current) return;
+    detectorsLayerRef.current.eachLayer(layer => {
+      const aid = (layer.feature?.properties?.AID_ID_Number || layer.feature?.properties?.OBJECTID || '').toString().trim().toUpperCase();
+      const traffic = trafficMapRef.current[aid];
+      const speed = traffic?.avgSpeed ?? null;
+      layer.setStyle({ fillColor: speedColor(speed) });
+    });
+  };
+
+  const fetchTrafficUpdate = async () => {
+    try {
+      const res = await fetch('https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml');
+      if (!res.ok) throw new Error('Failed to load traffic XML');
+      const xmlText = await res.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
+      const trafficMap = {};
+
+      xmlDoc.querySelectorAll('detector').forEach(detector => {
+        const id = detector.querySelector('detector_id')?.textContent?.trim();
+        if (!id) return;
+        const lanes = Array.from(detector.querySelectorAll('lane')).map(lane => ({
+          lane_id: lane.querySelector('lane_id')?.textContent?.trim() || 'Unknown',
+          speed: Number(lane.querySelector('speed')?.textContent?.trim() || '0'),
+          occupancy: Number(lane.querySelector('occupancy')?.textContent?.trim() || '0'),
+          volume: Number(lane.querySelector('volume')?.textContent?.trim() || '0'),
+          valid: lane.querySelector('valid')?.textContent?.trim() || '',
+        }));
+        const speeds = lanes.filter(l => !Number.isNaN(l.speed)).map(l => l.speed);
+        const avgSpeed = speeds.length ? Number((speeds.reduce((sum, value) => sum + value, 0) / speeds.length).toFixed(1)) : null;
+        trafficMap[id.toUpperCase()] = { lanes, avgSpeed };
+      });
+
+      trafficMapRef.current = trafficMap;
+      updateDetectorStyles();
+    } catch (e) {
+      console.warn('Failed to update traffic data', e);
+    }
+  };
 
   useEffect(() => {
     // Initialize Leaflet map once the script has loaded
@@ -423,58 +472,58 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
     if (leafletInstanceRef.current) return;
 
     try {
-        // Center map on Victoria Harbour (lat, lon) — disable interactive zoom handlers so SVG overlay stays aligned
-        // create map without default zoom control, we'll add one positioned at top-right
-        leafletInstanceRef.current = L.map(leafletMapRef.current, {
-          attributionControl: false,
-          zoomControl: false,
-          scrollWheelZoom: false,
-          doubleClickZoom: false,
-          boxZoom: false,
-          touchZoom: false,
-          keyboard: false,
-          dragging: true,
-        }).setView([22.303, 114.194], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(leafletInstanceRef.current);
-        // add zoom control at top-right
-        try { L.control.zoom({ position: 'topright' }).addTo(leafletInstanceRef.current); } catch (e) {}
+      leafletInstanceRef.current = L.map(leafletMapRef.current, {
+        attributionControl: false,
+        zoomControl: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        touchZoom: false,
+        keyboard: false,
+        dragging: true,
+      }).setView([22.303, 114.194], 13);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(leafletInstanceRef.current);
+      try { L.control.zoom({ position: 'topright' }).addTo(leafletInstanceRef.current); } catch (e) {}
 
-        // Ensure zoom handlers are disabled (defensive)
-        try {
-          leafletInstanceRef.current.scrollWheelZoom.disable();
-          leafletInstanceRef.current.doubleClickZoom.disable();
-          leafletInstanceRef.current.boxZoom.disable();
-          leafletInstanceRef.current.touchZoom.disable();
-          leafletInstanceRef.current.keyboard.disable();
-        } catch (e) {}
+      try {
+        leafletInstanceRef.current.scrollWheelZoom.disable();
+        leafletInstanceRef.current.doubleClickZoom.disable();
+        leafletInstanceRef.current.boxZoom.disable();
+        leafletInstanceRef.current.touchZoom.disable();
+        leafletInstanceRef.current.keyboard.disable();
+      } catch (e) {}
     } catch (e) {
       console.warn('Leaflet init failed', e);
     }
 
-    // after init, load detectors GeoJSON
     (async () => {
       try {
-        const res = await fetch('/Traffic_Detectors_SLP_gdb_Traffic_Detectors_SLP_converted.geojson');
-        if (!res.ok) return;
-        const geojson = await res.json();
+        const geoRes = await fetch('/Traffic_Detectors_SLP_gdb_Traffic_Detectors_SLP_converted.geojson');
+        if (!geoRes.ok) throw new Error('Failed to load geojson');
+
+        const geojson = await geoRes.json();
         const pointToLayer = (feature, latlng) => {
-          // center marker + halo for visibility
-          const center = L.circleMarker(latlng, { radius: 6, fillColor: '#ff4d6d', color: '#ff4d6d', weight: 1, fillOpacity: 1 });
-          const halo = L.circle(latlng, { radius: 40, stroke: false, fillColor: '#ff4d6d', fillOpacity: 0.08 });
-          return L.layerGroup([halo, center]);
+          const aid = (feature.properties?.AID_ID_Number || feature.properties?.OBJECTID || '').toString().trim().toUpperCase();
+          const traffic = trafficMapRef.current[aid];
+          const speed = traffic?.avgSpeed ?? null;
+          const color = speedColor(speed);
+          return L.circleMarker(latlng, {
+            radius: 8,
+            fillColor: color,
+            color: '#0f172a',
+            weight: 1.5,
+            fillOpacity: 0.96,
+            opacity: 0.95,
+          });
         };
-        const onEachFeature = (feature, layer) => {
-          const props = feature.properties || {};
-          const popupHtml = Object.keys(props).length ? `<div style="max-width:240px"><strong>${props.name || props.id || props.ID || ''}</strong><br/><pre style="white-space:pre-wrap;margin:6px 0 0 0;font-size:12px">${JSON.stringify(props, null, 2)}</pre></div>` : 'Traffic detector';
-          layer.bindPopup(popupHtml);
-        };
-        detectorsLayerRef.current = L.geoJSON(geojson, { pointToLayer, onEachFeature });
+
+        detectorsLayerRef.current = L.geoJSON(geojson, { pointToLayer });
         if (showDetectors && detectorsLayerRef.current) {
           detectorsLayerRef.current.addTo(leafletInstanceRef.current);
           try { leafletInstanceRef.current.fitBounds(detectorsLayerRef.current.getBounds(), { maxZoom: 18 }); } catch (e) {}
         }
       } catch (e) {
-        console.warn('Failed to load detectors geojson', e);
+        console.warn('Failed to load detectors data', e);
       }
     })();
 
@@ -484,7 +533,14 @@ function AnimatedMap({ aircraft, showAll=false, fleet=[], onSelectAircraft, hide
         leafletInstanceRef.current = null;
       }
     };
-  }, [leafletMapRef]);
+  }, [leafletMapRef, showDetectors]);
+
+  useEffect(() => {
+    if (!leafletInstanceRef.current) return;
+    fetchTrafficUpdate();
+    const intervalId = window.setInterval(fetchTrafficUpdate, 60000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   // toggle detectors layer
   useEffect(() => {
@@ -651,13 +707,13 @@ function TwinsPage({ selectedAircraft, fleet, setSelectedAircraft }) {
   const [selectedStationId, setSelectedStationId] = useState(0);
   if (!selectedAircraft) return null;
   return <section className="grid grid-cols-[1.12fr_0.88fr] gap-2">
-    <div className="grid min-w-0 gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
       <DigitalTwinViewer aircraft={selectedAircraft} title="Live Asset Replication" />
       <div className="grid grid-cols-2 gap-2">
         {fleet.map(item => { const tone = getStatusTone(item.status); const isSelected = item.id === selectedAircraft.id; return <button key={item.id} onClick={() => setSelectedAircraft(item)} className={cn('rounded-3xl border p-2.5 text-left transition-colors', isSelected ? 'border-cyan-400/50 bg-cyan-400/10' : 'border-white/10 bg-[#07111f]/90 hover:border-cyan-500/30 hover:bg-cyan-500/5')}><div className="flex items-center justify-between gap-2"><div className="min-w-0  font-mono text-sm text-white">{item.id}</div><div className={cn('rounded-full px-2 py-1 text-[10px]', tone.chip)}>{item.status}</div></div><div className="mt-2  text-xs text-slate-400">{item.locationLabel}</div><div className="mt-3 grid grid-cols-2 gap-2 text-[10px]"><div className="rounded-xl bg-white/[0.03] p-2 text-slate-300">ALT<div className="mt-1 font-mono text-cyan-300">{Math.round(item.altitude)} m</div></div><div className="rounded-xl bg-white/[0.03] p-2 text-slate-300">SPD<div className="mt-1 font-mono text-cyan-300">{Math.round(item.speed)} km/h</div></div></div></button>; })}
       </div>
     </div>
-    <div className="grid min-w-0 gap-2" style={{ gridTemplateRows: '1fr 1fr 1fr' }}>
+    <div className="grid min-w-0 gap-2" style={{ gridTemplateRows: 'auto auto auto' }}>
       <AnimatedMap aircraft={selectedAircraft} showAll fleet={fleet} onSelectAircraft={setSelectedAircraft} />
       <WindPanel selectedStationId={selectedStationId} />
       <StationSelector selectedStationId={selectedStationId} onSelectStation={setSelectedStationId} />
@@ -920,7 +976,7 @@ const localSettingsOptions = {
     { id: 'refreshInterval', label: 'Refresh Interval', value: '1 second', options: ['Real-time (0.1s)', '1 second', '5 seconds', 'Manual'] },
   ],
   twin: [
-    { id: 'defaultModel', label: 'Default Aircraft Model', value: 'EH216-S', options: ['EH216-S', 'Joby S4', 'Archer Midnight', 'Volocopter'] },
+    { id: 'defaultModel', label: 'Default Aircraft Model', value: 'Eve-100', options: ['Eve-100', 'Joby S4', 'Archer Midnight', 'Volocopter'] },
     { id: 'renderQuality', label: '3D Render Quality', value: 'High', options: ['Ultra (Ray Tracing)', 'High', 'Medium', 'Low (Performance)'] },
     { id: 'cameraMode', label: 'Camera Mode', value: 'Orbital', options: ['Orbital', 'Free Fly', 'Cockpit View', 'Follow Mode'] },
     { id: 'highlight', label: 'Component Highlight', value: 'Health-based', options: ['Health-based', 'Temperature-based', 'Vibration-based', 'None'] },

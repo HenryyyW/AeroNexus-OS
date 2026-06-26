@@ -2,7 +2,7 @@ export const evtolFleet = [
   {
     id: 'EVTOL-01',
     displayName: '#1 eVTOL',
-    model: 'EH216-S',
+    model: 'Eve-100',
     role: 'Passenger Shuttle',
     status: 'Nominal',
     health: 96,
@@ -84,7 +84,7 @@ export const evtolFleet = [
   {
     id: 'EVTOL-02',
     displayName: '#2 eVTOL',
-    model: 'EH216-S',
+    model: 'Eve-100',
     role: 'Coastal Patrol',
     status: 'Monitoring',
     health: 91,
@@ -164,7 +164,7 @@ export const evtolFleet = [
   {
     id: 'EVTOL-03',
     displayName: '#3 eVTOL',
-    model: 'EH216-S',
+    model: 'Eve-100',
     role: 'Medical Response',
     status: 'Warning',
     health: 87,
@@ -337,7 +337,7 @@ export const settingsSections = {
     ['Refresh Interval', '1 second'],
   ],
   twin: [
-    ['Default Aircraft Model', 'EH216-S'],
+    ['Default Aircraft Model', 'Eve-100'],
     ['3D Render Quality', 'High'],
     ['Camera Mode', 'Orbital'],
     ['Component Highlight', 'Health-based'],
