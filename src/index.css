@@ -1,6 +1,16 @@
+@import 'cesium/Build/Cesium/Widgets/widgets.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.cesium-viewer {
+  font-family: inherit;
+}
+
+.cesium-viewer-bottom {
+  display: none !important;
+}
 
 body {
   margin: 0;

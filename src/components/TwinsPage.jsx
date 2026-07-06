@@ -1,99 +1,12 @@
 import { useState, Suspense, useEffect, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { ContactShadows, Environment, OrbitControls, useGLTF, Float, Bounds, Center, useAnimations } from '@react-three/drei';
 import { getStatusTone, cn } from '../utils/evtolUtils';
 import { weatherStations } from '../data/weatherStations';
 import useWindData from '../hooks/useWindData';
 import AnimatedMap from './AnimatedMap';
+import CesiumViewer from './CesiumViewer';
 
-const USE_REAL_MODEL = true;
-
-function RealEvtolModel() {
-  const group = useRef();
-  const { scene, animations } = useGLTF('/evtol.glb');
-  const { actions } = useAnimations(animations, group);
-
-  useEffect(() => {
-    if (actions) {
-      Object.values(actions).forEach((action) => { if (action) action.play(); });
-    }
-  }, [actions]);
-
-  return (
-    <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.4}>
-      <Bounds fit clip margin={1.2}>
-        <Center>
-          <primitive ref={group} object={scene} />
-        </Center>
-      </Bounds>
-    </Float>
-  );
-}
-
-function RotorBlur({ position }) {
-  const rotorRef = useRef();
-  useFrame((state) => {
-    if (rotorRef.current) rotorRef.current.rotation.y = state.clock.elapsedTime * 18;
-  });
-  return (
-    <group position={position}>
-      <mesh>
-        <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} />
-        <meshStandardMaterial color="#37f29b" />
-      </mesh>
-      <mesh ref={rotorRef} rotation={[Math.PI / 2, 0, 0]} position={[0, 0.14, 0]}>
-        <cylinderGeometry args={[0.62, 0.62, 0.02, 40]} />
-        <meshBasicMaterial color="#d9fbff" transparent opacity={0.18} depthWrite={false} />
-      </mesh>
-      <mesh rotation={[Math.PI / 2, 0, Math.PI / 4]} position={[0, 0.145, 0]}>
-        <boxGeometry args={[1.1, 0.03, 0.08]} />
-        <meshBasicMaterial color="#e7fdff" transparent opacity={0.12} />
-      </mesh>
-    </group>
-  );
-}
-
-function AircraftModel({ aircraft }) {
-  const craftRef = useRef();
-  useFrame((state) => {
-    if (!craftRef.current) return;
-    const t = state.clock.elapsedTime;
-    craftRef.current.position.y = 0.5 + Math.sin(t * 1.2) * 0.12;
-    craftRef.current.rotation.z = Math.sin(t * 0.8) * 0.03;
-    craftRef.current.rotation.x = Math.cos(t * 0.6) * 0.015;
-  });
-
-  if (USE_REAL_MODEL) {
-    return (
-      <group ref={craftRef}>
-        <Suspense fallback={<mesh><boxGeometry args={[1, 1, 1]} /><meshStandardMaterial color="gray" wireframe /></mesh>}>
-          <RealEvtolModel />
-        </Suspense>
-      </group>
-    );
-  }
-
-  const color = aircraft.status === 'Warning' ? '#ff4d6d' : (aircraft.status === 'Monitoring' ? '#fcd34d' : '#cbd5e1');
-  return (
-    <group ref={craftRef} position={[0, 0.5, 0]}>
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[3, 0.8, 1.5]} />
-        <meshStandardMaterial color={color} roughness={0.3} metalness={0.8} />
-      </mesh>
-      <RotorBlur position={[1, 0.5, 0.8]} />
-      <RotorBlur position={[1, 0.5, -0.8]} />
-      <RotorBlur position={[-1, 0.5, 0.8]} />
-      <RotorBlur position={[-1, 0.5, -0.8]} />
-      <mesh position={[0, 0.5, 0]}>
-        <boxGeometry args={[0.6, 0.6, 0.6]} />
-        <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={0.5} wireframe />
-      </mesh>
-    </group>
-  );
-}
 
 function DigitalTwinViewer({ aircraft, title = 'Live Asset Replication' }) {
-  const tone = getStatusTone(aircraft.status);
   return (
     <section className="relative flex min-h-[360px] flex-col overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#07111f]/90">
       <div className="absolute left-3 top-2.5 z-10 rounded-xl border border-cyan-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-300">{title}</div>
@@ -107,16 +20,7 @@ function DigitalTwinViewer({ aircraft, title = 'Live Asset Replication' }) {
         ))}
       </div>
       <div className="h-full w-full min-h-[360px]">
-        <Canvas camera={{ position: [5, 4.2, 5], fov: 42 }} dpr={[1, 1.5]}>
-          <ambientLight intensity={0.85} />
-          <directionalLight position={[10, 12, 8]} intensity={1.8} color="#fff7e8" />
-          <directionalLight position={[-6, 4, -8]} intensity={0.45} color="#9ad8ff" />
-          <pointLight position={[0, 3, 0]} intensity={0.6} color={tone.glow} />
-          <Environment files="/skybox.exr" background blur={0.05} />
-          <AircraftModel aircraft={aircraft} />
-          <OrbitControls autoRotate autoRotateSpeed={aircraft.status === 'Warning' ? 1.6 : 0.55} />
-          <ContactShadows position={[0, -1.2, 0]} scale={15} blur={2.6} opacity={0.15} resolution={256} frames={1} />
-        </Canvas>
+        <CesiumViewer aircraft={aircraft} />
       </div>
     </section>
   );
