@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import TrafficDetectorLayer from './TrafficDetectorLayer';
 
 const APP_START_TIME = Date.now();
 
@@ -45,60 +46,10 @@ function usePositions(aircraft, showAll, fleet) {
   return positions;
 }
 
-function speedColor(speed) {
-  if (speed == null) return '#94a3b8';
-  if (speed >= 50) return '#22c55e';
-  if (speed >= 25) return '#f59e0b';
-  return '#ef4444';
-}
-
 export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onSelectAircraft, hideLabel = false }) {
-  const [showDetectors, setShowDetectors] = useState(true);
   const positions = usePositions(aircraft, showAll, fleet);
   const leafletMapRef = useRef(null);
   const leafletInstanceRef = useRef(null);
-  const detectorsLayerRef = useRef(null);
-  const trafficMapRef = useRef({});
-
-  const updateDetectorStyles = () => {
-    if (!detectorsLayerRef.current) return;
-    detectorsLayerRef.current.eachLayer((layer) => {
-      const aid = (layer.feature?.properties?.AID_ID_Number || layer.feature?.properties?.OBJECTID || '').toString().trim().toUpperCase();
-      const traffic = trafficMapRef.current[aid];
-      layer.setStyle({ fillColor: speedColor(traffic?.avgSpeed ?? null) });
-    });
-  };
-
-  const fetchTrafficUpdate = async () => {
-    try {
-      const res = await fetch('https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml');
-      if (!res.ok) throw new Error('Failed to load traffic XML');
-      const xmlText = await res.text();
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
-      const trafficMap = {};
-
-      xmlDoc.querySelectorAll('detector').forEach((detector) => {
-        const id = detector.querySelector('detector_id')?.textContent?.trim();
-        if (!id) return;
-        const lanes = Array.from(detector.querySelectorAll('lane')).map((lane) => ({
-          lane_id: lane.querySelector('lane_id')?.textContent?.trim() || 'Unknown',
-          speed: Number(lane.querySelector('speed')?.textContent?.trim() || '0'),
-          occupancy: Number(lane.querySelector('occupancy')?.textContent?.trim() || '0'),
-          volume: Number(lane.querySelector('volume')?.textContent?.trim() || '0'),
-          valid: lane.querySelector('valid')?.textContent?.trim() || '',
-        }));
-        const speeds = lanes.filter((l) => !Number.isNaN(l.speed)).map((l) => l.speed);
-        const avgSpeed = speeds.length ? Number((speeds.reduce((sum, value) => sum + value, 0) / speeds.length).toFixed(1)) : null;
-        trafficMap[id.toUpperCase()] = { lanes, avgSpeed };
-      });
-
-      trafficMapRef.current = trafficMap;
-      updateDetectorStyles();
-    } catch (e) {
-      console.warn('Failed to update traffic data', e);
-    }
-  };
 
   useEffect(() => {
     if (!leafletMapRef.current || typeof window === 'undefined') return;
@@ -133,64 +84,18 @@ export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onS
       console.warn('Leaflet init failed', e);
     }
 
-    (async () => {
-      try {
-        const geoRes = await fetch('/Traffic_Detectors_SLP_gdb_Traffic_Detectors_SLP_converted.geojson');
-        if (!geoRes.ok) throw new Error('Failed to load geojson');
-        const geojson = await geoRes.json();
-
-        const pointToLayer = (feature, latlng) => {
-          const aid = (feature.properties?.AID_ID_Number || feature.properties?.OBJECTID || '').toString().trim().toUpperCase();
-          const traffic = trafficMapRef.current[aid];
-          return L.circleMarker(latlng, {
-            radius: 8,
-            fillColor: speedColor(traffic?.avgSpeed ?? null),
-            color: '#0f172a',
-            weight: 1.5,
-            fillOpacity: 0.96,
-            opacity: 0.95,
-          });
-        };
-
-        detectorsLayerRef.current = L.geoJSON(geojson, { pointToLayer });
-        if (showDetectors && detectorsLayerRef.current) {
-          detectorsLayerRef.current.addTo(leafletInstanceRef.current);
-          try {
-            leafletInstanceRef.current.fitBounds(detectorsLayerRef.current.getBounds(), { maxZoom: 18 });
-          } catch (e) {}
-        }
-      } catch (e) {
-        console.warn('Failed to load detectors data', e);
-      }
-    })();
-
     return () => {
       if (leafletInstanceRef.current) {
         try { leafletInstanceRef.current.remove(); } catch (e) {}
         leafletInstanceRef.current = null;
       }
     };
-  }, [showDetectors]);
-
-  useEffect(() => {
-    if (!leafletInstanceRef.current) return;
-    fetchTrafficUpdate();
-    const intervalId = window.setInterval(fetchTrafficUpdate, 60000);
-    return () => window.clearInterval(intervalId);
   }, []);
-
-  useEffect(() => {
-    if (!leafletInstanceRef.current || !detectorsLayerRef.current) return;
-    if (showDetectors) {
-      try { detectorsLayerRef.current.addTo(leafletInstanceRef.current); } catch (e) {}
-    } else {
-      try { detectorsLayerRef.current.remove(); } catch (e) {}
-    }
-  }, [showDetectors]);
 
   return (
     <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20">
       <div ref={leafletMapRef} className="absolute inset-0 z-0" />
+      <TrafficDetectorLayer leafletMap={leafletInstanceRef.current} />
       <div className="absolute inset-0 bg-[#06101b]/40 pointer-events-none" />
       {!hideLabel && (
         <div className="absolute left-3 top-2.5 z-20 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">Airspace Trajectory Map</div>
