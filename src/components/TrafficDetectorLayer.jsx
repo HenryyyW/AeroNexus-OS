@@ -4,6 +4,7 @@ const DETECTOR_LOCATION_CSV_URL =
   '/traffic_speed_volume_occ_info.csv';
 const DETECTOR_TELEMETRY_XML_URL =
   '/rawSpeedVol-all.xml';
+const DETECTOR_VISUALIZATION_ENABLED = false;
 
 function formatMetric(value, digits = 1) {
   const num = Number(value);
@@ -156,6 +157,7 @@ export default function TrafficDetectorLayer({ leafletMap }) {
   const detectorRefreshTimerRef = useRef(null);
 
   useEffect(() => {
+    if (!DETECTOR_VISUALIZATION_ENABLED) return;
     if (!leafletMap || typeof window === 'undefined') return;
     const L = window.L;
     if (!L) return;

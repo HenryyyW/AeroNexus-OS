@@ -26,3 +26,6 @@ dist-ssr
 # data
 /rawdata
 *-adminsdk-*.json
+
+# large geospatial assets
+/public/Road_Network_KML/

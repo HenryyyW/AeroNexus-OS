@@ -2,13 +2,20 @@ import { useEffect, useRef } from 'react';
 
 const SEGMENT_ROUTE_CSV_URL = '/speed_segments_info.csv';
 const SEGMENT_SPEED_XML_URL = '/irnAvgSpeed-all.xml';
-const SEGMENT_GEOMETRY_GEOJSON_URL = '/road_segments.geojson';
+const SEGMENT_GEOMETRY_KML_URL = '/Road_Network_KML/Transportation_TNM_20260717_gdb_CENTERLINE_converted.kml';
 
 function speedColor(speed) {
   if (speed == null) return '#6b7280';
   if (speed >= 60) return '#22c55e';
   if (speed >= 35) return '#f59e0b';
   return '#ef4444';
+}
+
+function speedBand(speed) {
+  if (speed == null) return 'NO DATA';
+  if (speed >= 60) return 'GREEN (FAST)';
+  if (speed >= 35) return 'YELLOW (MODERATE)';
+  return 'RED (SLOW)';
 }
 
 function parseRouteMap(csvText) {
@@ -35,17 +42,25 @@ function parseRouteMap(csvText) {
 function parseSegmentSpeeds(xmlText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, 'application/xml');
-  const latestPeriod = Array.from(doc.querySelectorAll('period')).at(-1);
-  const date = doc.querySelector('date')?.textContent?.trim() || '';
-  const periodTo = latestPeriod?.querySelector('period_to')?.textContent?.trim() || '';
-  const updatedAt = [date, periodTo].filter(Boolean).join(' ');
+
+  const byName = (node, localName) => Array.from(node.getElementsByTagNameNS('*', localName));
+  const firstText = (node, localName) => byName(node, localName)[0]?.textContent?.trim() || '';
+
+  const periods = byName(doc, 'period');
+  const latestPeriod = periods.at(-1) || null;
+  const date = firstText(doc, 'date');
+  const periodTo = latestPeriod ? firstText(latestPeriod, 'period_to') : '';
+  const time = firstText(doc, 'time');
+  const updatedAt = latestPeriod ? [date, periodTo].filter(Boolean).join(' ') : [date, time].filter(Boolean).join(' ');
 
   const speedMap = {};
-  latestPeriod?.querySelectorAll('segment').forEach((segmentNode) => {
-    const segmentId = segmentNode.querySelector('segment_id')?.textContent?.trim();
+  const segmentNodes = latestPeriod ? byName(latestPeriod, 'segment') : byName(doc, 'segment');
+
+  segmentNodes.forEach((segmentNode) => {
+    const segmentId = firstText(segmentNode, 'segment_id');
     if (!segmentId) return;
-    const speedValue = Number(segmentNode.querySelector('speed')?.textContent?.trim());
-    const isValid = segmentNode.querySelector('valid')?.textContent?.trim() === 'Y';
+    const speedValue = Number(firstText(segmentNode, 'speed'));
+    const isValid = firstText(segmentNode, 'valid') === 'Y';
     speedMap[segmentId] = {
       speed: Number.isNaN(speedValue) ? null : speedValue,
       valid: isValid,
@@ -57,7 +72,61 @@ function parseSegmentSpeeds(xmlText) {
 
 function featureSegmentId(feature) {
   const p = feature?.properties || {};
-  return String(p.segment_id || p.SEGMENT_ID || p.irn_id || p.IRN_ID || p.id || p.ID || '').trim();
+  return String(
+    p.segment_id ||
+      p.SEGMENT_ID ||
+      p.irn_id ||
+      p.IRN_ID ||
+      p.route_id ||
+      p.ROUTE_ID ||
+      p.id ||
+      p.ID ||
+      ''
+  ).trim();
+}
+
+function parseKmlCoordinates(coordinatesText) {
+  return coordinatesText
+    .trim()
+    .split(/\s+/)
+    .map((pair) => pair.split(',').map((value) => Number(value.trim())))
+    .filter(([lng, lat]) => Number.isFinite(lng) && Number.isFinite(lat))
+    .map(([lng, lat]) => [lng, lat]);
+}
+
+function parseRoadGeometryKml(kmlText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(kmlText, 'application/xml');
+  const placemarks = Array.from(doc.getElementsByTagNameNS('*', 'Placemark'));
+
+  return placemarks
+    .map((placemark) => {
+      const properties = {};
+
+      Array.from(placemark.getElementsByTagNameNS('*', 'SimpleData')).forEach((simpleData) => {
+        const name = simpleData.getAttribute('name');
+        if (!name) return;
+        properties[name] = simpleData.textContent?.trim() || '';
+      });
+
+      const placemarkName = Array.from(placemark.children).find((node) => node.localName === 'name')?.textContent?.trim() || '';
+      if (placemarkName) properties.name = placemarkName;
+
+      const lineString = placemark.getElementsByTagNameNS('*', 'LineString')[0] || null;
+      const coordinatesNode = lineString?.getElementsByTagNameNS('*', 'coordinates')[0] || null;
+      const coordinates = coordinatesNode ? parseKmlCoordinates(coordinatesNode.textContent || '') : null;
+      if (!coordinates || coordinates.length < 2) return null;
+
+      return {
+        type: 'Feature',
+        properties,
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+      };
+    })
+    .filter(Boolean);
 }
 
 export default function StrategicSegmentLayer({ leafletMap }) {
@@ -65,6 +134,7 @@ export default function StrategicSegmentLayer({ leafletMap }) {
   const segmentLayerRef = useRef(null);
   const markerMapRef = useRef({});
   const refreshTimerRef = useRef(null);
+  const renderedSegmentIdsRef = useRef(new Set());
 
   useEffect(() => {
     if (!leafletMap || typeof window === 'undefined') return;
@@ -72,30 +142,41 @@ export default function StrategicSegmentLayer({ leafletMap }) {
     if (!L) return;
 
     const applySegmentStyles = (speedMap, updatedAt) => {
+      let matchedCount = 0;
       Object.entries(markerMapRef.current).forEach(([segmentId, layer]) => {
         const metric = speedMap[segmentId];
         const speed = metric?.valid ? metric.speed : null;
+        if (speed == null) return;
+        matchedCount += 1;
         const color = speedColor(speed);
 
         if (typeof layer.setStyle === 'function') {
           layer.setStyle({
             color,
-            weight: speed == null ? 1.8 : 2.8,
-            opacity: speed == null ? 0.45 : 0.9,
+            weight: speed == null ? 0.9 : 4.2,
+            opacity: speed == null ? 0.14 : 1,
           });
+        }
+
+        if (speed != null && typeof layer.bringToFront === 'function') {
+          layer.bringToFront();
         }
 
         const route = routeMapRef.current[segmentId] || 'N/A';
         const speedLabel = speed == null ? 'N/A' : `${speed.toFixed(1)} km/h`;
+        const band = speedBand(speed);
         layer.bindPopup(
           `<div style="font-size:12px;line-height:1.4">
             <strong>Segment ${segmentId}</strong><br/>
             Route: ${route}<br/>
             Speed: ${speedLabel}<br/>
+            Band: ${band}<br/>
             Updated: ${updatedAt || 'N/A'}
           </div>`
         );
       });
+
+      console.info(`[StrategicSegmentLayer] rendered segments: ${Object.keys(markerMapRef.current).length}, active speeds: ${matchedCount}`);
     };
 
     const refreshSegmentSpeeds = async () => {
@@ -112,19 +193,43 @@ export default function StrategicSegmentLayer({ leafletMap }) {
 
     (async () => {
       try {
-        const [routeResponse, geometryResponse] = await Promise.all([
+        const [routeResponse, geometryResponse, speedResponse] = await Promise.all([
           fetch(SEGMENT_ROUTE_CSV_URL),
-          fetch(SEGMENT_GEOMETRY_GEOJSON_URL),
+          fetch(SEGMENT_GEOMETRY_KML_URL),
+          fetch(SEGMENT_SPEED_XML_URL),
         ]);
 
         if (!routeResponse.ok) throw new Error('Failed to load speed_segments_info.csv');
         routeMapRef.current = parseRouteMap(await routeResponse.text());
 
         if (!geometryResponse.ok) {
-          throw new Error('Missing road_segments.geojson in public folder');
+          throw new Error('Missing centerline KML in public folder');
         }
 
-        const geojson = await geometryResponse.json();
+        if (!speedResponse.ok) {
+          throw new Error('Failed to load segment speed XML');
+        }
+
+        const kmlText = await geometryResponse.text();
+        const xmlText = await speedResponse.text();
+        const { speedMap, updatedAt } = parseSegmentSpeeds(xmlText);
+        const activeSegmentIds = new Set(
+          Object.entries(speedMap)
+            .filter(([, metric]) => metric?.valid && metric?.speed != null)
+            .map(([segmentId]) => segmentId)
+        );
+
+        const geojson = {
+          type: 'FeatureCollection',
+          features: parseRoadGeometryKml(kmlText).filter((feature) => activeSegmentIds.has(featureSegmentId(feature))),
+        };
+
+        if (!geojson.features.length) {
+          console.warn('[StrategicSegmentLayer] No road features parsed from KML.');
+        }
+
+        renderedSegmentIdsRef.current = activeSegmentIds;
+
         segmentLayerRef.current = L.geoJSON(geojson, {
           style: {
             color: '#6b7280',
@@ -144,7 +249,7 @@ export default function StrategicSegmentLayer({ leafletMap }) {
           // Bounds may be invalid if no features were loaded.
         }
 
-        refreshSegmentSpeeds();
+        applySegmentStyles(speedMap, updatedAt);
         refreshTimerRef.current = window.setInterval(refreshSegmentSpeeds, 60000);
       } catch (error) {
         console.warn('Strategic segment layer setup failed:', error);
@@ -158,6 +263,7 @@ export default function StrategicSegmentLayer({ leafletMap }) {
       }
       markerMapRef.current = {};
       routeMapRef.current = {};
+      renderedSegmentIdsRef.current = new Set();
       if (segmentLayerRef.current) {
         try {
           segmentLayerRef.current.remove();

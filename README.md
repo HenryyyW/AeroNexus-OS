@@ -53,6 +53,21 @@ Hold Ctrl and click the link, or copy and paste it into your browser.
 
 You can now view and interact with the latest version of the POC!
 
+## Road Network KML Data Setup
+
+The road speed overlay requires external KML files that are not committed to this repository.
+
+1. Download the required KML files from:
+https://portal.csdi.gov.hk/geoportal/#metadataInfoPanel
+
+2. Place the downloaded KML files into the public folder, under:
+public/Road_Network_KML/
+
+3. Ensure this file exists after download:
+public/Road_Network_KML/Transportation_TNM_20260717_gdb_CENTERLINE_converted.kml
+
+Without these files, the strategic road segment overlay will not render.
+
 Troubleshooting (For Windows Users):
 If you encounter a red error message in Windows PowerShell when running npm run dev (e.g., running scripts is disabled or npm.ps1 cannot be loaded), this is due to a default Windows security restriction.
 

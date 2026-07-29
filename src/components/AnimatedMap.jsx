@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import TrafficDetectorLayer from './TrafficDetectorLayer';
+import StrategicSegmentLayer from './StrategicSegmentLayer';
 
 const APP_START_TIME = Date.now();
 
@@ -95,10 +95,10 @@ export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onS
   return (
     <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20">
       <div ref={leafletMapRef} className="absolute inset-0 z-0" />
-      <TrafficDetectorLayer leafletMap={leafletInstanceRef.current} />
+      <StrategicSegmentLayer leafletMap={leafletInstanceRef.current} />
       <div className="absolute inset-0 bg-[#06101b]/40 pointer-events-none" />
       {!hideLabel && (
-        <div className="absolute left-3 top-2.5 z-20 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">Airspace Trajectory Map</div>
+        <div className="absolute left-3 top-2.5 z-20 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">EVTOL Trajectory Map</div>
       )}
       <div className="absolute inset-0 z-10 pointer-events-none">
         <svg className="h-full w-full" viewBox="0 0 400 320" preserveAspectRatio="none">
