@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 const SEGMENT_ROUTE_CSV_URL = '/speed_segments_info.csv';
-const SEGMENT_SPEED_XML_URL = '/irnAvgSpeed-all.xml';
+const SEGMENT_SPEED_XML_URL = '/api/traffic/segment-speeds';
 const SEGMENT_GEOMETRY_KML_URL = '/Road_Network_KML/Transportation_TNM_20260717_gdb_CENTERLINE_converted.kml';
 
 function speedColor(speed) {

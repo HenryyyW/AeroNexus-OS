@@ -15,6 +15,12 @@ export default defineConfig({
         changeOrigin: true,
         followRedirects: true,
         rewrite: (path) => path.replace(/^\/api\/weather/, '')
+      },
+      '/api/traffic/segment-speeds': {
+        target: 'https://resource.data.one.gov.hk',
+        changeOrigin: true,
+        followRedirects: true,
+        rewrite: () => '/td/traffic-detectors/irnAvgSpeed-all.xml'
       }
     }
   }

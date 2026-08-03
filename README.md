@@ -68,6 +68,15 @@ public/Road_Network_KML/Transportation_TNM_20260717_gdb_CENTERLINE_converted.kml
 
 Without these files, the strategic road segment overlay will not render.
 
+## Live Road Speed API (Development)
+
+Strategic road speeds are now fetched from a local API path instead of a static XML file:
+
+- API path used by frontend: /api/traffic/segment-speeds
+- Source feed proxied by Vite: https://resource.data.one.gov.hk/td/traffic-detectors/irnAvgSpeed-all.xml
+
+This proxy is configured in Vite dev server. Run npm run dev to use it locally.
+
 Troubleshooting (For Windows Users):
 If you encounter a red error message in Windows PowerShell when running npm run dev (e.g., running scripts is disabled or npm.ps1 cannot be loaded), this is due to a default Windows security restriction.
 
