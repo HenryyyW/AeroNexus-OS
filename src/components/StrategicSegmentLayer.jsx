@@ -129,7 +129,7 @@ function parseRoadGeometryKml(kmlText) {
     .filter(Boolean);
 }
 
-export default function StrategicSegmentLayer({ leafletMap }) {
+export default function StrategicSegmentLayer({ leafletMap, autoFit = true }) {
   const routeMapRef = useRef({});
   const segmentLayerRef = useRef(null);
   const markerMapRef = useRef({});
@@ -243,10 +243,12 @@ export default function StrategicSegmentLayer({ leafletMap }) {
           },
         }).addTo(leafletMap);
 
-        try {
-          leafletMap.fitBounds(segmentLayerRef.current.getBounds(), { maxZoom: 14 });
-        } catch (error) {
-          // Bounds may be invalid if no features were loaded.
+        if (autoFit) {
+          try {
+            leafletMap.fitBounds(segmentLayerRef.current.getBounds(), { maxZoom: 14 });
+          } catch (error) {
+            // Bounds may be invalid if no features were loaded.
+          }
         }
 
         applySegmentStyles(speedMap, updatedAt);

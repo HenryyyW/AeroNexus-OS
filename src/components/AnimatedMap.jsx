@@ -2,8 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import StrategicSegmentLayer from './StrategicSegmentLayer';
 
 const APP_START_TIME = Date.now();
+const TRAJECTORY_VIEW_BOUNDS = [
+  [22.245, 113.9],
+  [22.42, 114.29],
+];
 
-function usePositions(aircraft, showAll, fleet) {
+function useRoutePositions(aircraft, showAll, fleet) {
   const [positions, setPositions] = useState({});
 
   useEffect(() => {
@@ -16,7 +20,7 @@ function usePositions(aircraft, showAll, fleet) {
 
       fleetToAnimate.forEach((item, index) => {
         if (!item.route || !item.route.length) return;
-        const duration = 18000 + index * 4000;
+        const duration = 54000 + index * 10000;
         const rawProgress = elapsed / duration;
         let progress = rawProgress % 1;
         if (Math.floor(rawProgress) % 2 === 1) progress = 1 - progress;
@@ -32,7 +36,10 @@ function usePositions(aircraft, showAll, fleet) {
         const localProgress = progress * segments - currentSegment;
         const a = points[currentSegment];
         const b = points[currentSegment + 1];
-        newPositions[item.id] = { x: a.x + (b.x - a.x) * localProgress, y: a.y + (b.y - a.y) * localProgress };
+        newPositions[item.id] = {
+          lat: a.lat + (b.lat - a.lat) * localProgress,
+          lng: a.lng + (b.lng - a.lng) * localProgress,
+        };
       });
 
       setPositions(newPositions);
@@ -47,9 +54,10 @@ function usePositions(aircraft, showAll, fleet) {
 }
 
 export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onSelectAircraft, hideLabel = false }) {
-  const positions = usePositions(aircraft, showAll, fleet);
+  const positions = useRoutePositions(aircraft, showAll, fleet);
   const leafletMapRef = useRef(null);
   const leafletInstanceRef = useRef(null);
+  const [leafletMap, setLeafletMap] = useState(null);
 
   useEffect(() => {
     if (!leafletMapRef.current || typeof window === 'undefined') return;
@@ -73,6 +81,7 @@ export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onS
         maxZoom: 20,
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       }).addTo(leafletInstanceRef.current);
+      setLeafletMap(leafletInstanceRef.current);
 
       try { L.control.zoom({ position: 'topright' }).addTo(leafletInstanceRef.current); } catch (e) {}
       leafletInstanceRef.current.scrollWheelZoom.disable();
@@ -89,19 +98,41 @@ export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onS
         try { leafletInstanceRef.current.remove(); } catch (e) {}
         leafletInstanceRef.current = null;
       }
+      setLeafletMap(null);
     };
   }, []);
+
+  useEffect(() => {
+    if (!leafletMap) return;
+
+    try {
+      leafletMap.fitBounds(TRAJECTORY_VIEW_BOUNDS, {
+        animate: false,
+        padding: [16, 16],
+      });
+    } catch (error) {
+      console.warn('Trajectory viewport fit failed', error);
+    }
+  }, [leafletMap]);
+
+  const mapSize = leafletMap ? leafletMap.getSize() : { x: 400, y: 320 };
+
+  const projectPoint = (point) => {
+    if (!leafletMap || point?.lat == null || point?.lng == null) return null;
+    const projected = leafletMap.latLngToContainerPoint([point.lat, point.lng]);
+    return { x: projected.x, y: projected.y };
+  };
 
   return (
     <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20">
       <div ref={leafletMapRef} className="absolute inset-0 z-0" />
-      <StrategicSegmentLayer leafletMap={leafletInstanceRef.current} />
+      <StrategicSegmentLayer leafletMap={leafletMap} autoFit={false} />
       <div className="absolute inset-0 bg-[#06101b]/40 pointer-events-none" />
       {!hideLabel && (
         <div className="absolute left-3 top-2.5 z-20 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">EVTOL Trajectory Map</div>
       )}
       <div className="absolute inset-0 z-10 pointer-events-none">
-        <svg className="h-full w-full" viewBox="0 0 400 320" preserveAspectRatio="none">
+        <svg className="h-full w-full" viewBox={`0 0 ${mapSize.x} ${mapSize.y}`} preserveAspectRatio="none">
           <defs>
             <linearGradient id="routeStroke" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#00f0ff" />
@@ -109,13 +140,15 @@ export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onS
             </linearGradient>
           </defs>
           {(showAll ? fleet : [aircraft]).map((item) => {
+            const projectedPoints = (item.route || []).map(projectPoint).filter(Boolean);
             const active = item.id === aircraft.id;
-            const startPoint = item.route?.[0] || { x: 0, y: 0 };
-            const endPoint = item.route?.[item.route.length - 1] || { x: 0, y: 0 };
+            const startPoint = projectedPoints[0] || { x: 0, y: 0 };
+            const endPoint = projectedPoints[projectedPoints.length - 1] || { x: 0, y: 0 };
+            if (!projectedPoints.length) return null;
             return (
               <g key={`${item.id}-path`}>
                 <path
-                  d={`M ${(item.route || []).map((p) => `${p.x} ${p.y}`).join(' L ')}`}
+                  d={`M ${projectedPoints.map((point) => `${point.x} ${point.y}`).join(' L ')}`}
                   fill="none"
                   stroke={active ? (showAll ? '#00f0ff' : 'url(#routeStroke)') : 'rgba(255,255,255,.22)'}
                   strokeWidth={active ? 2.4 : 1.1}
@@ -128,7 +161,7 @@ export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onS
             );
           })}
           {(showAll ? fleet : [aircraft]).map((item) => {
-            const currentPos = positions[item.id] || item.route?.[0] || { x: 0, y: 0 };
+            const currentPos = projectPoint(positions[item.id] || item.route?.[0]) || { x: 0, y: 0 };
             const active = item.id === aircraft.id;
             return (
               <g key={`${item.id}-marker`} transform={`translate(${currentPos.x}, ${currentPos.y})`} style={{ cursor: onSelectAircraft ? 'pointer' : 'default', pointerEvents: onSelectAircraft ? 'auto' : 'none' }} onClick={() => onSelectAircraft && onSelectAircraft(item)}>
