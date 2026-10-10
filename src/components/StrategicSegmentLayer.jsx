@@ -245,7 +245,7 @@ export default function StrategicSegmentLayer({ leafletMap, autoFit = true }) {
         if (autoFit) {
           try {
             leafletMap.fitBounds(segmentLayerRef.current.getBounds(), { maxZoom: 14 });
-          } catch (error) {
+          } catch {
             // Bounds may be invalid if no features were loaded.
           }
         }
@@ -268,13 +268,13 @@ export default function StrategicSegmentLayer({ leafletMap, autoFit = true }) {
       if (segmentLayerRef.current) {
         try {
           segmentLayerRef.current.remove();
-        } catch (error) {
+        } catch {
           // Ignore cleanup failure.
         }
         segmentLayerRef.current = null;
       }
     };
-  }, [leafletMap]);
+  }, [leafletMap, autoFit]);
 
   return null;
 }

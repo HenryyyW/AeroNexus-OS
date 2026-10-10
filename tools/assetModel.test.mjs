@@ -58,3 +58,11 @@ test('includes stable aircraft and parent identifiers for every component', () =
   assert.equal(component.parentId, 'EVTOL-TEST-power');
   assert.equal(component.kind, 'component');
 });
+
+test('applies simulated structural damage to frame health', () => {
+  const tree = buildAircraftAssetTree(createAircraft({ structuralDamage: 0.15 }));
+  const frame = findAsset(tree, 'EVTOL-TEST-airframe');
+
+  assert.equal(frame.health, 81);
+  assert.equal(frame.alertLevel, 'Warning');
+});

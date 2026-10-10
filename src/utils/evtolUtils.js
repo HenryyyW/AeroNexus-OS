@@ -16,7 +16,7 @@ export function normalizeEvtolId(label) {
 
 export function parseAnalysisItem(item = '') {
   const trimmed = item.trim();
-  const withoutEmoji = trimmed.replace(/^[\u2705\u2714\u2716\u2717\u2718\u274C\u274E\u26A0\u26A0\uFE0F!x×✕✖]+\s*/i, '');
+  const withoutEmoji = trimmed.replace(/^(?:(?:\u26A0\uFE0F?)|[\u2705\u2714\u2716\u2717\u2718\u274C\u274E!x×✕✖])+\s*/i, '');
   let level = 'neutral';
   if (/^[✅✔]/.test(trimmed)) level = 'success';
   else if (/^[⚠!]/.test(trimmed)) level = 'warning';

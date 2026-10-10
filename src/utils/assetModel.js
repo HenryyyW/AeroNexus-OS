@@ -15,6 +15,55 @@ function worstAlert(nodes) {
   ), 'Unknown');
 }
 
+// Aggregate confidence from children (weighted by health availability)
+function aggregateConfidence(children) {
+  const validChildren = children.filter(c => c.confidence != null);
+  if (validChildren.length === 0) return null;
+  // Weight by inverse of uncertainty (higher confidence = more weight)
+  const totalWeight = validChildren.reduce((sum, c) => sum + (c.confidence || 0.1), 0);
+  if (totalWeight === 0) return validChildren[0].confidence;
+  const weightedSum = validChildren.reduce((sum, c) => sum + (c.confidence || 0) * (c.confidence || 0.1), 0);
+  return Math.round((weightedSum / totalWeight) * 10000) / 10000;
+}
+
+// Merge sensor health flags from children
+function mergeSensorHealth(children) {
+  const merged = {};
+  children.forEach(child => {
+    if (child.sensorOK) {
+      Object.entries(child.sensorOK).forEach(([key, value]) => {
+        if (merged[key] === undefined) merged[key] = value;
+        else merged[key] = merged[key] && value; // AND logic: all children must be OK
+      });
+    }
+  });
+  return merged;
+}
+
+// Merge validation details (collect all)
+function mergeValidationDetails(children) {
+  const merged = {};
+  children.forEach(child => {
+    if (child.validationDetails) {
+      Object.entries(child.validationDetails).forEach(([key, value]) => {
+        if (!merged[key]) merged[key] = [];
+        merged[key].push(value);
+      });
+    }
+  });
+  // For each sensor, determine overall validity (all children must be valid)
+  const result = {};
+  Object.entries(merged).forEach(([key, validations]) => {
+    result[key] = {
+      valid: validations.every(v => v.valid),
+      corrected: validations.some(v => v.corrected),
+      reasons: [...new Set(validations.map(v => v.reason).filter(Boolean))],
+      details: validations
+    };
+  });
+  return result;
+}
+
 function node({
   id,
   parentId,
@@ -28,6 +77,12 @@ function node({
   source = 'No connected telemetry source',
   method = 'No condition model configured.',
   children = [],
+  // New fields for alignment & credibility
+  sensorOK = null,
+  validationDetails = null,
+  confidence = null,
+  eventTime = null,
+  processingTime = null
 }) {
   return {
     id,
@@ -42,6 +97,12 @@ function node({
     source,
     method,
     children,
+    // New fields
+    sensorOK,
+    validationDetails,
+    confidence,
+    eventTime,
+    processingTime
   };
 }
 
@@ -56,6 +117,13 @@ function buildSubsystem({ aircraft, id, name, children, lastUpdated }) {
     : null;
   const states = [...new Set(children.map((child) => child.operatingCondition.state))];
 
+  // Aggregate new fields from children
+  const sensorOK = mergeSensorHealth(children);
+  const validationDetails = mergeValidationDetails(children);
+  const confidence = aggregateConfidence(children);
+  const eventTime = children.length > 0 ? children[0].eventTime : null;
+  const processingTime = children.length > 0 ? children[0].processingTime : null;
+
   return node({
     id,
     parentId: aircraft.id,
@@ -69,16 +137,35 @@ function buildSubsystem({ aircraft, id, name, children, lastUpdated }) {
     source: 'Aggregated from child asset records',
     method: 'Subsystem health is the mean of available child health estimates; alert is the highest child alert.',
     children,
+    // New aggregated fields
+    sensorOK,
+    validationDetails,
+    confidence,
+    eventTime,
+    processingTime
   });
 }
 
 export function buildAircraftAssetTree(aircraft) {
+  // Use validated data from aircraft (already validated in useSimulatedFleet)
   const lastUpdated = aircraft.lastUpdatedAt || null;
   const source = 'Simulated fleet demo data';
   const inFlight = Number(aircraft.speed || 0) > 1;
-  const rotorHealth = [aircraft.componentHealth?.rotorA, aircraft.componentHealth?.rotorB];
+  
+  // Use validated sensor data from aircraft
   const vibration = Number(aircraft.vibration || 0);
   const temperature = Number(aircraft.temperature || 0);
+  const soc = Number(aircraft.soc || 0);
+  const motorRpm = Number(aircraft.motorRpm || 0);
+  const voltage = Number(aircraft.voltage || 0);
+  const batteryCapacity = Number(aircraft.batteryCapacity || 5.0);
+  const internalResistance = Number(aircraft.batteryInternalResistance || 0.05);
+  const structuralDamage = Number(aircraft.structuralDamage || 0);
+  const frameHealth = aircraft.componentHealth?.frame == null
+    ? null
+    : clamp(aircraft.componentHealth.frame * (1 - structuralDamage));
+
+  const rotorHealth = [aircraft.componentHealth?.rotorA, aircraft.componentHealth?.rotorB];
 
   const motors = rotorHealth.map((baseHealth, index) => {
     const vibrationPenalty = Math.max(0, vibration - 35) * 0.2;
@@ -101,7 +188,7 @@ export function buildAircraftAssetTree(aircraft) {
       operatingCondition: {
         state: vibration >= 55 || temperature >= 85 ? 'Outside demo operating threshold' : inFlight ? 'Operating' : 'Standby',
         metrics: [
-          metric('Motor speed', Math.round(aircraft.motorRpm || 0), 'rpm'),
+          metric('Motor speed', Math.round(motorRpm), 'rpm'),
           metric('Vibration', vibration.toFixed(1), 'demo units'),
           metric('Temperature', temperature.toFixed(1), '°C'),
         ],
@@ -112,19 +199,33 @@ export function buildAircraftAssetTree(aircraft) {
         basis: 'Heuristic: component baseline health minus shared aircraft vibration and temperature penalties. Not a certified RUL prediction.',
       },
       alertLevel,
-      lastUpdated,
+      lastUpdated: aircraft.eventTime || lastUpdated,
       source,
       method: 'Warning at vibration ≥ 40 or temperature ≥ 70°C; critical at vibration ≥ 55 or temperature ≥ 85°C. Per-rotor sensors are not connected; the same aircraft-level signals are shown for each group.',
+      // Propagate new fields
+      sensorOK: aircraft.sensorOK ? {
+        temperature: aircraft.sensorOK.temperature,
+        vibration: aircraft.sensorOK.vibration,
+        motorRpm: aircraft.sensorOK.motorRpm
+      } : null,
+      validationDetails: aircraft.validationDetails ? {
+        temperature: aircraft.validationDetails.temperature,
+        vibration: aircraft.validationDetails.vibration,
+        motorRpm: aircraft.validationDetails.motorRpm
+      } : null,
+      confidence: aircraft.confidence ?? null,
+      eventTime: aircraft.eventTime ?? null,
+      processingTime: aircraft.processingTime ?? null
     });
   });
 
   const batteryHealthBase = aircraft.componentHealth?.battery;
   const batteryHealth = batteryHealthBase == null
     ? null
-    : clamp(batteryHealthBase - Math.max(0, temperature - 55) * 0.15 - Math.max(0, 20 - Number(aircraft.soc || 0)) * 0.5);
+    : clamp(batteryHealthBase - Math.max(0, temperature - 55) * 0.15 - Math.max(0, 20 - soc) * 0.5);
   let batteryAlert = alertFromHealth(batteryHealth);
-  if (temperature >= 80 || Number(aircraft.soc || 0) <= 10) batteryAlert = 'Critical';
-  else if ((temperature >= 65 || Number(aircraft.soc || 0) <= 20) && alertRank[batteryAlert] < alertRank.Warning) batteryAlert = 'Warning';
+  if (temperature >= 80 || soc <= 10) batteryAlert = 'Critical';
+  else if ((temperature >= 65 || soc <= 20) && alertRank[batteryAlert] < alertRank.Warning) batteryAlert = 'Warning';
 
   const powerChildren = [node({
     id: `${aircraft.id}-battery-pack`,
@@ -133,11 +234,13 @@ export function buildAircraftAssetTree(aircraft) {
     kind: 'component',
     health: batteryHealth,
     operatingCondition: {
-      state: Number(aircraft.soc || 0) <= 10 || temperature >= 80 ? 'Critical operating range' : 'Operating',
+      state: soc <= 10 || temperature >= 80 ? 'Critical operating range' : 'Operating',
       metrics: [
-        metric('State of charge', Number(aircraft.soc || 0), '%'),
+        metric('State of charge', soc, '%'),
         metric('Pack temperature', temperature.toFixed(1), '°C'),
         metric('Cycle count', Number(aircraft.batteryCycles || 0), 'cycles'),
+        metric('Capacity', batteryCapacity.toFixed(2), 'Ah'),
+        metric('Internal Resistance', internalResistance.toFixed(4), 'Ω'),
       ],
     },
     remainingLife: {
@@ -146,9 +249,27 @@ export function buildAircraftAssetTree(aircraft) {
       basis: 'Demo proxy derived from configured pack health, temperature and state of charge; cell-level capacity fade model is not connected.',
     },
     alertLevel: batteryAlert,
-    lastUpdated,
+    lastUpdated: aircraft.eventTime || lastUpdated,
     source,
     method: 'Warning at temperature ≥ 65°C or SOC ≤ 20%; critical at temperature ≥ 80°C or SOC ≤ 10%.',
+    // Propagate new fields
+    sensorOK: aircraft.sensorOK ? {
+      soc: aircraft.sensorOK.soc,
+      voltage: aircraft.sensorOK.voltage,
+      temperature: aircraft.sensorOK.temperature,
+      batteryCapacity: aircraft.sensorOK.batteryCapacity,
+      internalResistance: aircraft.sensorOK.internalResistance
+    } : null,
+    validationDetails: aircraft.validationDetails ? {
+      soc: aircraft.validationDetails.soc,
+      voltage: aircraft.validationDetails.voltage,
+      temperature: aircraft.validationDetails.temperature,
+      batteryCapacity: aircraft.validationDetails.batteryCapacity,
+      internalResistance: aircraft.validationDetails.internalResistance
+    } : null,
+    confidence: aircraft.confidence ?? null,
+    eventTime: aircraft.eventTime ?? null,
+    processingTime: aircraft.processingTime ?? null
   })];
 
   const avionicsChildren = [
@@ -167,6 +288,12 @@ export function buildAircraftAssetTree(aircraft) {
     alertLevel: 'Unknown',
     source: 'No connected component telemetry',
     method: 'Status is intentionally unknown; the previous UI label was static and is not treated as telemetry.',
+    // Propagate new fields (unknown)
+    sensorOK: null,
+    validationDetails: null,
+    confidence: null,
+    eventTime: aircraft.eventTime ?? null,
+    processingTime: aircraft.processingTime ?? null
   }));
 
   const structureChildren = [node({
@@ -174,7 +301,7 @@ export function buildAircraftAssetTree(aircraft) {
     parentId: `${aircraft.id}-structure`,
     name: 'Airframe',
     kind: 'component',
-    health: aircraft.componentHealth?.frame ?? null,
+    health: frameHealth,
     operatingCondition: {
       state: inFlight ? 'In flight' : 'On ground',
       metrics: [metric('Altitude', Number(aircraft.altitude || 0), 'm'), metric('Speed', Number(aircraft.speed || 0), 'km/h')],
@@ -184,9 +311,21 @@ export function buildAircraftAssetTree(aircraft) {
       unit: 'demo days',
       basis: 'Existing demo fleet RUL field; not derived from structural loads or inspection records.',
     },
-    lastUpdated,
+    lastUpdated: aircraft.eventTime || lastUpdated,
     source,
-    method: 'Health uses the configured demo frame score. No strain, fatigue-cycle or inspection data is connected.',
+    method: 'Configured demo frame score adjusted by simulated structural damage; not a certified fatigue-life estimate.',
+    // Propagate new fields
+    sensorOK: aircraft.sensorOK ? {
+      vibration: aircraft.sensorOK.vibration,
+      temperature: aircraft.sensorOK.temperature
+    } : null,
+    validationDetails: aircraft.validationDetails ? {
+      vibration: aircraft.validationDetails.vibration,
+      temperature: aircraft.validationDetails.temperature
+    } : null,
+    confidence: aircraft.confidence ?? null,
+    eventTime: aircraft.eventTime ?? null,
+    processingTime: aircraft.processingTime ?? null
   })];
 
   const subsystems = [
@@ -195,6 +334,9 @@ export function buildAircraftAssetTree(aircraft) {
     buildSubsystem({ aircraft, id: `${aircraft.id}-avionics`, name: 'Avionics & Sensors', children: avionicsChildren, lastUpdated }),
     buildSubsystem({ aircraft, id: `${aircraft.id}-structure`, name: 'Structure', children: structureChildren, lastUpdated }),
   ];
+
+  // Aggregate confidence at aircraft level
+  const aircraftConfidence = aggregateConfidence(subsystems);
 
   return node({
     id: aircraft.id,
@@ -207,7 +349,8 @@ export function buildAircraftAssetTree(aircraft) {
       metrics: [
         metric('Altitude', Number(aircraft.altitude || 0), 'm'),
         metric('Speed', Number(aircraft.speed || 0), 'km/h'),
-        metric('State of charge', Number(aircraft.soc || 0), '%'),
+        metric('State of charge', soc, '%'),
+        metric('Voltage', voltage.toFixed(2), 'V'),
       ],
     },
     remainingLife: {
@@ -216,9 +359,15 @@ export function buildAircraftAssetTree(aircraft) {
       basis: 'Existing demo fleet field; not a validated aircraft life prediction.',
     },
     alertLevel: aircraft.status === 'Warning' ? 'Warning' : aircraft.status === 'Critical' ? 'Critical' : aircraft.status === 'Monitoring' ? 'Monitoring' : 'Nominal',
-    lastUpdated,
+    lastUpdated: aircraft.eventTime || lastUpdated,
     source,
     method: 'Aircraft state is assembled from the current simulated fleet fields; subsystem alerts are evaluated independently using the demo rules shown on each component.',
     children: subsystems,
+    // New aggregated fields at aircraft level
+    sensorOK: aircraft.sensorOK ?? null,
+    validationDetails: aircraft.validationDetails ?? null,
+    confidence: aircraftConfidence,
+    eventTime: aircraft.eventTime ?? null,
+    processingTime: aircraft.processingTime ?? null
   });
 }

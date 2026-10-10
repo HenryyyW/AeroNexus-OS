@@ -102,7 +102,11 @@ export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onS
 
     return () => {
       if (leafletInstanceRef.current) {
-        try { leafletInstanceRef.current.remove(); } catch (e) {}
+        try {
+          leafletInstanceRef.current.remove();
+        } catch {
+          // Map cleanup is best-effort after unmount.
+        }
         leafletInstanceRef.current = null;
       }
       setLeafletMap(null);

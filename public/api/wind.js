@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Access-Control-Allow-Methods', '*');
     res.status(200).send(csv);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to fetch wind data' });
   }
 }

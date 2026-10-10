@@ -6,21 +6,22 @@
 
 body {
   margin: 0;
-  background: #08090b;
-  color: #f4f5f6;
+  background: #090a0f;
+  color: #f3f4f6;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .grok-theme {
-  --grok-bg: #08090b;
-  --grok-panel: #111315;
-  --grok-raised: #17191c;
-  --grok-line: #292c30;
-  --grok-blue: #4b9cff;
-  --grok-blue-soft: rgba(75, 156, 255, 0.12);
+  --grok-bg: #090a0f;
+  --grok-panel: #11131c;
+  --grok-raised: #151822;
+  --grok-line: rgba(255,255,255,0.06);
+  --grok-accent: #10b981;
+  --grok-accent-border: rgba(16,185,129,0.3);
+  --grok-accent-muted: rgba(16,185,129,0.08);
   min-height: 100vh;
   background-color: var(--grok-bg);
-  color: #f4f5f6;
+  color: #f3f4f6;
 }
 
 .grok-theme [class*='bg-[#07111f'],
@@ -36,11 +37,11 @@ body {
 
 .grok-theme [class*='bg-cyan-'][class*='/'],
 .grok-theme [class*='bg-emerald-'][class*='/'] {
-  background-color: var(--grok-blue-soft) !important;
+  background-color: var(--grok-accent-muted) !important;
 }
 
 .grok-theme [class~='bg-cyan-500'] {
-  background-color: #347fdb !important;
+  background-color: var(--grok-accent) !important;
 }
 
 .grok-theme [class*='border-white/'] {
@@ -49,7 +50,7 @@ body {
 
 .grok-theme [class*='border-cyan-'],
 .grok-theme [class*='border-emerald-'] {
-  border-color: rgba(75, 156, 255, 0.32) !important;
+  border-color: var(--grok-accent-border) !important;
 }
 
 .grok-theme [class*='text-slate-100'],
@@ -69,15 +70,15 @@ body {
 
 .grok-theme [class*='text-cyan-'],
 .grok-theme [class*='text-emerald-'] {
-  color: #78b7ff !important;
+  color: var(--grok-accent) !important;
 }
 
 .grok-theme [class*='border-cyan-400/50'] {
-  border-color: rgba(75, 156, 255, 0.72) !important;
+  border-color: rgba(16,185,129,0.72) !important;
 }
 
 .grok-theme [class*='bg-cyan-400/10'] {
-  background-color: rgba(75, 156, 255, 0.16) !important;
+  background-color: rgba(16,185,129,0.16) !important;
 }
 
 .cesium-viewer {
@@ -89,7 +90,12 @@ body {
 }
 
 .glass-panel {
-  @apply bg-cyber-panel backdrop-blur-md border border-cyan-900/50 rounded-lg p-4 shadow-[0_0_15px_rgba(0,240,255,0.05)];
+  background-color: var(--grok-panel);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--grok-line);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
 }
 
 html, body, #root {
@@ -98,4 +104,3 @@ html, body, #root {
   overflow: visible !important;
   overflow-y: auto !important;
 }
-

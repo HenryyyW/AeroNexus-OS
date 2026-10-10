@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import { Activity, Cpu, Settings, Wrench, ChevronRight } from 'lucide-react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
@@ -28,13 +29,13 @@ const localSettingsOptions = {
   ],
 };
 
-function SettingsBlock({ title, icon: Icon, sectionKey, settingsState, updateSetting }) {
+function SettingsBlock({ title, icon, sectionKey, settingsState, updateSetting }) {
   const items = localSettingsOptions[sectionKey];
   return (
     <section className="rounded-3xl border border-white/10 bg-[#07111f]/90 p-2.5">
       <div className="flex items-center gap-2">
         <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-2 text-cyan-300">
-          <Icon size={16} />
+          {createElement(icon, { size: 16 })}
         </div>
         <div className="text-xl font-semibold text-white">{title}</div>
       </div>

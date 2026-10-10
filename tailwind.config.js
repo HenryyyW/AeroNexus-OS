@@ -8,11 +8,11 @@ export default {
     extend: {
       colors: {
         cyber: {
-          dark: '#050b14',
-          panel: 'rgba(10, 20, 35, 0.7)',
-          blue: '#00f0ff',
-          red: '#ff003c',
-          green: '#00ff66'
+          dark: '#090a0f',
+          panel: '#11131c',
+          blue: '#10b981',
+          red: '#10b981',
+          green: '#10b981'
         }
       }
     },

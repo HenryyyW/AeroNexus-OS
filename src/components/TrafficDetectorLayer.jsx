@@ -237,7 +237,7 @@ export default function TrafficDetectorLayer({ leafletMap }) {
       if (detectorLayerRef.current) {
         try {
           detectorLayerRef.current.remove();
-        } catch (e) {
+        } catch {
           // ignore cleanup errors
         }
         detectorLayerRef.current = null;

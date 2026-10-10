@@ -69,6 +69,91 @@ function AssetStatus({ level }) {
   return <span className={cn('rounded-full border px-2 py-0.5 text-[10px] uppercase', tone[level] || tone.Unknown)}>{level}</span>;
 }
 
+// New components for alignment & credibility
+function EventTimeDisplay({ eventTime, processingTime }) {
+  const eventDate = eventTime ? new Date(eventTime) : null;
+  const processDate = processingTime ? new Date(processingTime) : null;
+  
+  return (
+    <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium">Event Time:</span>
+        <span className="font-mono text-cyan-300">{eventDate ? eventDate.toLocaleString() : 'N/A'}</span>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium">Processed:</span>
+        <span className="font-mono text-slate-300">{processDate ? processDate.toLocaleString() : 'N/A'}</span>
+      </div>
+    </div>
+  );
+}
+
+function SensorHealthDisplay({ sensorOK }) {
+  if (!sensorOK) return null;
+  
+  const sensorItems = Object.entries(sensorOK).map(([name, ok]) => (
+    <div key={name} className="flex items-center gap-2">
+      <span className="text-xs font-medium">{name}:</span>
+      <span className={cn('rounded-full px-2 py-0.5 text-[10px]', ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300')}>
+        {ok ? 'OK' : 'FAIL'}
+      </span>
+    </div>
+  ));
+  
+  return (
+    <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
+      <div className="text-[10px] font-medium mb-1">Sensor Health:</div>
+      <div className="space-y-1">{sensorItems}</div>
+    </div>
+  );
+}
+
+function ValidationDisplay({ validationDetails }) {
+  if (!validationDetails) return null;
+  
+  const validationItems = Object.entries(validationDetails).map(([name, detail]) => {
+    const { valid, corrected, reason, reasons } = detail;
+    const validationReason = reason || reasons?.filter(Boolean).join(', ');
+    return (
+      <div key={name} className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium">{name}:</span>
+        <div className="flex items-center gap-1">
+          <span className={cn('rounded-full px-2 py-0.5 text-[10px]', valid ? (corrected ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300') : 'bg-red-500/20 text-red-300')}>
+            {valid ? (corrected ? 'Corrected' : 'OK') : 'Invalid'}
+          </span>
+          {validationReason && (
+            <span className="ml-1 text-[8px] italic text-slate-400">({validationReason})</span>
+          )}
+        </div>
+      </div>
+    );
+  });
+  
+  return (
+    <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
+      <div className="text-[10px] font-medium mb-1">Validation:</div>
+      <div className="space-y-1">{validationItems}</div>
+    </div>
+  );
+}
+
+function ConfidenceDisplay({ confidence }) {
+  if (confidence === null) return null;
+  
+  const confidencePercent = (confidence * 100).toFixed(1);
+  const tone = confidence >= 0.8 ? 'text-emerald-300' : confidence >= 0.6 ? 'text-amber-300' : 'text-red-300';
+  
+  return (
+    <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
+      <div className="text-[10px] font-medium mb-1">Confidence:</div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono">{confidencePercent}%</span>
+        <span className={tone}>●</span>
+      </div>
+    </div>
+  );
+}
+
 function AssetTreeNode({ asset, depth = 0, selectedId, onSelect }) {
   const [expanded, setExpanded] = useState(depth < 3);
   const selected = selectedId === asset.id;
@@ -92,8 +177,9 @@ function AssetTreeNode({ asset, depth = 0, selectedId, onSelect }) {
 
 function AssetDetail({ asset }) {
   const updated = asset.lastUpdated ? new Date(asset.lastUpdated).toLocaleString() : 'Not available';
+  
   return (
-    <div className="min-w-0 space-y-3">
+    <div className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{asset.kind} state</div>
@@ -101,21 +187,52 @@ function AssetDetail({ asset }) {
         </div>
         <AssetStatus level={asset.alertLevel} />
       </div>
+      
       <div className="grid grid-cols-2 gap-2">
         <DetailMetric label="Health" value={asset.health == null ? 'Unknown' : `${asset.health}%`} accent={asset.health != null && asset.health <= 85 ? 'text-amber-300' : 'text-cyan-300'} />
         <DetailMetric label="Operating condition" value={asset.operatingCondition.state} accent="text-slate-200" />
         <DetailMetric label="Remaining life" value={asset.remainingLife.value == null ? 'Unknown' : `${asset.remainingLife.value} ${asset.remainingLife.unit}`} accent="text-slate-200" />
         <DetailMetric label="Last update" value={updated} accent="text-slate-300" />
       </div>
+      
       {asset.operatingCondition.metrics.length > 0 && (
         <div className="grid grid-cols-2 gap-2">
           {asset.operatingCondition.metrics.map((item) => <DetailMetric key={item.name} label={item.name} value={`${item.value} ${item.unit}`} accent="text-cyan-200" />)}
         </div>
       )}
+      
       <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
         <div><span className="text-slate-500">Source: </span><span className="text-slate-300">{asset.source}</span></div>
         <div><span className="text-slate-500">State rule: </span><span className="text-slate-300">{asset.method}</span></div>
         <div><span className="text-slate-500">Life basis: </span><span className="text-slate-300">{asset.remainingLife.basis}</span></div>
+      </div>
+      
+      {/* Alignment & Credibility Section */}
+      <div className="space-y-3">
+        <div className="text-[10px] font-medium mb-1">Alignment & Credibility:</div>
+        
+        {/* Event Time */}
+        {asset.eventTime && (
+          <EventTimeDisplay 
+            eventTime={asset.eventTime} 
+            processingTime={asset.processingTime} 
+          />
+        )}
+        
+        {/* Sensor Health */}
+        {asset.sensorOK && (
+          <SensorHealthDisplay sensorOK={asset.sensorOK} />
+        )}
+        
+        {/* Validation Details */}
+        {asset.validationDetails && (
+          <ValidationDisplay validationDetails={asset.validationDetails} />
+        )}
+        
+        {/* Confidence */}
+        {asset.confidence !== null && (
+          <ConfidenceDisplay confidence={asset.confidence} />
+        )}
       </div>
     </div>
   );
@@ -127,13 +244,13 @@ function BatteryReplayPanel() {
   const [sampleOffset, setSampleOffset] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadError, setLoadError] = useState('');
-
+  
   useEffect(() => {
     const controller = new AbortController();
     fetch('/telemetry/battery-replay.json', { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
       })
       .then(setDataset)
       .catch((error) => {
@@ -141,12 +258,12 @@ function BatteryReplayPanel() {
       });
     return () => controller.abort();
   }, []);
-
+  
   const cycle = dataset?.cycles[cycleOffset];
   const samples = cycle?.samples || [];
   const eligibleCycles = dataset?.cycles.filter((item) => item.hasPairedChargeDischarge) || [];
   const sample = samples[Math.min(sampleOffset, Math.max(samples.length - 1, 0))];
-
+  
   useEffect(() => {
     if (!isPlaying || samples.length < 2) return undefined;
     const interval = setInterval(() => {
@@ -154,7 +271,7 @@ function BatteryReplayPanel() {
     }, 900);
     return () => clearInterval(interval);
   }, [isPlaying, samples.length]);
-
+  
   return (
     <section className="rounded-xl border border-sky-400/20 bg-sky-950/20 p-3" aria-label="Recorded battery cell replay">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -165,7 +282,7 @@ function BatteryReplayPanel() {
         </div>
         {cycle && <span className="rounded-full border border-sky-300/20 px-2 py-1 text-[10px] text-sky-200">Cycle {cycle.cycleIndex}</span>}
       </div>
-
+      
       {loadError ? <p className="mt-3 text-xs text-rose-300">{loadError}</p> : !dataset ? (
         <p className="mt-3 text-xs text-slate-400">Loading recorded battery data…</p>
       ) : cycle && sample ? (
@@ -179,7 +296,7 @@ function BatteryReplayPanel() {
             <DetailMetric label="Relative discharge capacity" value={cycle.capacityRetentionPercent == null ? 'Not eligible' : `${cycle.capacityRetentionPercent.toFixed(2)}%`} accent="text-sky-200" />
             <DetailMetric label="Peak cycle temperature" value={`${cycle.peakCellTemperatureC.toFixed(2)} °C`} accent="text-slate-200" />
           </div>
-
+          
           <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-2">
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <div className="text-xs font-medium text-slate-200">Capacity retention vs first eligible cycle</div>
@@ -199,7 +316,7 @@ function BatteryReplayPanel() {
               {dataset.capacityTrend.eligibleCycleCount.toLocaleString()} of {dataset.cycles.length.toLocaleString()} cycle indices contain both current directions and positive discharge capacity. The source does not provide a verified discharge cutoff, so this is a relative measured-capacity trend, not certified SOH or RUL.
             </p>
           </div>
-
+          
           <div className="mt-3 h-36 rounded-lg border border-white/10 bg-black/20 p-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={samples}>
@@ -212,7 +329,7 @@ function BatteryReplayPanel() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-
+          
           <div className="mt-3 flex items-center gap-2">
             <button type="button" onClick={() => setIsPlaying(!isPlaying)} className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-slate-200 hover:bg-white/[0.06]" aria-label={isPlaying ? 'Pause replay' : 'Play replay'} title={isPlaying ? 'Pause replay' : 'Play replay'}>
               {isPlaying ? <Pause size={14} /> : <Play size={14} />}
@@ -252,7 +369,7 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
   const [selectedAssetId, setSelectedAssetId] = useState(assetTree.children[0]?.children[0]?.id || assetTree.id);
   const [isBatteryReplayVisible, setIsBatteryReplayVisible] = useState(false);
   const selectedAsset = allAssets.find((asset) => asset.id === selectedAssetId) || assetTree;
-
+  
   const cockpitVideoMap = {
     'EVTOL-01': '/videos/evtol-1.mp4',
     'EVTOL-02': '/videos/evtol-2.mp4',
@@ -260,17 +377,17 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
     'EVTOL-04': '/videos/evtol-4.mp4',
   };
   const cockpitVideoSrc = cockpitVideoMap[aircraft.id] || '/videos/evtol-1.mp4';
-
+  
   const agentResponse = agentResponseProp || {
     safety_risk_assessment: { risk_level: 'Unknown', primary_risk: 'No agent response loaded.' },
     detailed_analysis: { visual: {}, audio: {}, fusion: 'No fusion analysis available.' },
     possible_causes: [],
     recommended_actions: [],
   };
-
+  
   const visualItems = Object.values(agentResponse.detailed_analysis.visual || {}).map(parseAnalysisItem);
   const audioItems = Object.values(agentResponse.detailed_analysis.audio || {}).map(parseAnalysisItem);
-
+  
   return (
     <div className="flex flex-col rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-5 h-full">
       <div className="mb-5">
@@ -347,7 +464,7 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
               <div className="text-sm font-bold text-slate-200">View</div>
               <div className="text-[10px] font-medium uppercase tracking-wider text-amber-200 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">Demo media</div>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+            <div className="overflow-hidden rounded-2xl border border-black">
               <video autoPlay loop muted playsInline className="w-full aspect-video object-cover" src={cockpitVideoSrc} />
             </div>
           </div>
@@ -378,42 +495,44 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
                     )) : <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">No visual analysis available.</div>}
                   </div>
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
-                  <div className="text-sm font-semibold text-slate-100 mb-3">Audio Analysis</div>
-                  <div className="space-y-2 text-sm text-slate-300">
-                    {audioItems.length > 0 ? audioItems.map((item, idx) => (
-                      <div key={idx} className={cn('rounded-2xl border p-2 flex items-start gap-3', item.level === 'danger' ? 'border-red-500/30 bg-red-500/10 text-red-100' : item.level === 'warning' ? 'border-amber-500/30 bg-amber-500/10 text-amber-100' : item.level === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100' : 'border-white/10 bg-slate-950/80 text-slate-200')}>
-                        <span className={cn('mt-1 h-2.5 w-2.5 rounded-full', item.level === 'danger' ? 'bg-red-400' : item.level === 'warning' ? 'bg-amber-300' : item.level === 'success' ? 'bg-emerald-300' : 'bg-slate-500')} />
-                        <span>{item.text}</span>
-                      </div>
-                    )) : <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">No audio analysis available.</div>}
+                <div className="grid gap-2 md:grid-cols-2">
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="text-sm font-semibold text-slate-100 mb-3">Audio Analysis</div>
+                    <div className="space-y-2 text-sm text-slate-300">
+                      {audioItems.length > 0 ? audioItems.map((item, idx) => (
+                        <div key={idx} className={cn('rounded-2xl border p-2 flex items-start gap-3', item.level === 'danger' ? 'border-red-500/30 bg-red-500/10 text-red-100' : item.level === 'warning' ? 'border-amber-500/30 bg-amber-500/10 text-amber-100' : item.level === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100' : 'border-white/10 bg-slate-950/80 text-slate-200')}>
+                          <span className={cn('mt-1 h-2.5 w-2.5 rounded-full', item.level === 'danger' ? 'bg-red-400' : item.level === 'warning' ? 'bg-amber-300' : item.level === 'success' ? 'bg-emerald-300' : 'bg-slate-500')} />
+                          <span>{item.text}</span>
+                        </div>
+                      )) : <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-2">No audio analysis available.</div>}
+                    </div>
                   </div>
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/80 p-3 text-sm text-slate-300">
-                    <div className="text-slate-100 font-semibold mb-2">Fusion</div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="text-sm font-semibold text-slate-100 mb-2">Fusion</div>
                     {agentResponse.detailed_analysis?.fusion || 'No fusion analysis available.'}
                   </div>
                 </div>
-              </div>
-              <div className="grid gap-2 md:grid-cols-2">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
-                  <div className="text-sm font-semibold text-slate-100 mb-3">Possible Causes</div>
-                  {agentResponse.possible_causes?.length > 0 ? (
-                    <ul className="list-disc list-inside space-y-2 text-sm text-slate-300">
-                      {agentResponse.possible_causes.map((cause, idx) => <li key={idx}>{cause}</li>)}
-                    </ul>
-                  ) : (
-                    <div className="text-sm text-slate-500">No possible causes available.</div>
-                  )}
-                </div>
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
-                  <div className="text-sm font-semibold text-slate-100 mb-3">Recommended Actions</div>
-                  {agentResponse.recommended_actions?.length > 0 ? (
-                    <ul className="list-disc list-inside space-y-2 text-sm text-slate-300">
-                      {agentResponse.recommended_actions.map((action, idx) => <li key={idx}>{action}</li>)}
-                    </ul>
-                  ) : (
-                    <div className="text-sm text-slate-500">No recommended actions available.</div>
-                  )}
+                <div className="grid gap-2 md:grid-cols-2">
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="text-sm font-semibold text-slate-100 mb-3">Possible Causes</div>
+                    {agentResponse.possible_causes?.length > 0 ? (
+                      <ul className="list-disc list-inside space-y-2 text-sm text-slate-300">
+                        {agentResponse.possible_causes.map((cause, idx) => <li key={idx}>{cause}</li>)}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-slate-500">No possible causes available.</div>
+                    )}
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="text-sm font-semibold text-slate-100 mb-3">Recommended Actions</div>
+                    {agentResponse.recommended_actions?.length > 0 ? (
+                      <ul className="list-disc list-inside space-y-2 text-sm text-slate-300">
+                        {agentResponse.recommended_actions.map((action, idx) => <li key={idx}>{action}</li>)}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-slate-500">No recommended actions available.</div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -430,7 +549,7 @@ export default function DetailsPage({ selectedAircraft, agentResponses }) {
   const responseKey = normalizeEvtolId(selectedAircraft.id);
   const inlineAgent = selectedAircraft.agent || selectedAircraft?.agenticGuard || null;
   const agentResp = inlineAgent || agentResponses[responseKey] || null;
-
+  
   return (
     <section className="grid grid-cols-[1.02fr_0.98fr] gap-2">
       <ComponentsDataPanel key={selectedAircraft.id} aircraft={selectedAircraft} agentResponse={agentResp} />
