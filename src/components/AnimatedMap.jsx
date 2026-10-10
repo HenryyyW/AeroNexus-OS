@@ -127,7 +127,6 @@ export default function AnimatedMap({ aircraft, showAll = false, fleet = [], onS
     <div className="relative h-full min-h-[360px] overflow-hidden rounded-3xl border border-cyan-500/20">
       <div ref={leafletMapRef} className="absolute inset-0 z-0" />
       <StrategicSegmentLayer leafletMap={leafletMap} autoFit={false} />
-      <div className="absolute inset-0 bg-[#06101b]/40 pointer-events-none" />
       {!hideLabel && (
         <div className="absolute left-3 top-2.5 z-20 rounded-xl border border-emerald-500/30 bg-black/40 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">EVTOL Trajectory Map</div>
       )}

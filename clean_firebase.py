@@ -1,9 +1,10 @@
+import os
 import firebase_admin
 from firebase_admin import credentials, db
 import time
 
-SERVICE_ACCOUNT_PATH = "ascendo-nexus-os-firebase-adminsdk-fbsvc-9334452d6e.json"
-DATABASE_URL = "https://ascendo-nexus-os-default-rtdb.asia-southeast1.firebasedatabase.app/"
+SERVICE_ACCOUNT_PATH = "aeronexus-os-firebase-adminsdk-fbsvc-9334452d6e.json"
+DATABASE_URL = os.environ["FIREBASE_DATABASE_URL"]
 
 # uncommon for execution
 #cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)

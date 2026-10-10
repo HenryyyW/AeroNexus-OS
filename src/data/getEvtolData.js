@@ -2,9 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue } from 'firebase/database';
 import evtolData from './evtolData';
 
-const firebaseConfig = {
-  databaseURL: 'https://ascendo-nexus-os-default-rtdb.asia-southeast1.firebasedatabase.app/',
-};
+const databaseURL = import.meta.env.VITE_FIREBASE_DATABASE_URL;
+
+if (!databaseURL) {
+  throw new Error('VITE_FIREBASE_DATABASE_URL is required to connect to Firebase.');
+}
+
+const firebaseConfig = { databaseURL };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);

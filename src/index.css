@@ -4,23 +4,88 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  margin: 0;
+  background: #08090b;
+  color: #f4f5f6;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.grok-theme {
+  --grok-bg: #08090b;
+  --grok-panel: #111315;
+  --grok-raised: #17191c;
+  --grok-line: #292c30;
+  --grok-blue: #4b9cff;
+  --grok-blue-soft: rgba(75, 156, 255, 0.12);
+  min-height: 100vh;
+  background-color: var(--grok-bg);
+  color: #f4f5f6;
+}
+
+.grok-theme [class*='bg-[#07111f'],
+.grok-theme [class*='bg-[#08111d'],
+.grok-theme [class*='bg-[#0b1b31'],
+.grok-theme [class*='bg-[#050b14'] {
+  background-color: var(--grok-panel) !important;
+}
+
+.grok-theme [class*='bg-white/'] {
+  background-color: var(--grok-raised) !important;
+}
+
+.grok-theme [class*='bg-cyan-'][class*='/'],
+.grok-theme [class*='bg-emerald-'][class*='/'] {
+  background-color: var(--grok-blue-soft) !important;
+}
+
+.grok-theme [class~='bg-cyan-500'] {
+  background-color: #347fdb !important;
+}
+
+.grok-theme [class*='border-white/'] {
+  border-color: var(--grok-line) !important;
+}
+
+.grok-theme [class*='border-cyan-'],
+.grok-theme [class*='border-emerald-'] {
+  border-color: rgba(75, 156, 255, 0.32) !important;
+}
+
+.grok-theme [class*='text-slate-100'],
+.grok-theme [class*='text-slate-200'],
+.grok-theme [class*='text-slate-300'] {
+  color: #e4e7eb !important;
+}
+
+.grok-theme [class*='text-slate-400'] {
+  color: #a0a5ad !important;
+}
+
+.grok-theme [class*='text-slate-500'],
+.grok-theme [class*='text-slate-600'] {
+  color: #747b84 !important;
+}
+
+.grok-theme [class*='text-cyan-'],
+.grok-theme [class*='text-emerald-'] {
+  color: #78b7ff !important;
+}
+
+.grok-theme [class*='border-cyan-400/50'] {
+  border-color: rgba(75, 156, 255, 0.72) !important;
+}
+
+.grok-theme [class*='bg-cyan-400/10'] {
+  background-color: rgba(75, 156, 255, 0.16) !important;
+}
+
 .cesium-viewer {
   font-family: inherit;
 }
 
 .cesium-viewer-bottom {
   display: none !important;
-}
-
-body {
-  margin: 0;
-  background-color: #020617;
-  background-image: 
-    radial-gradient(circle at 50% 0%, #0f172a 0%, transparent 70%),
-    linear-gradient(to bottom, transparent, #020617 100%);
-  color: white;
-  overflow: hidden;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
 .glass-panel {
@@ -33,3 +98,4 @@ html, body, #root {
   overflow: visible !important;
   overflow-y: auto !important;
 }
+

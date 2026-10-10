@@ -1,10 +1,11 @@
 import csv
+import os
 import firebase_admin
 from firebase_admin import credentials, db
 
-SERVICE_ACCOUNT_FILE = "ascendo-nexus-os-firebase-adminsdk-fbsvc-9334452d6e.json"
-DATABASE_URL = "https://ascendo-nexus-os-default-rtdb.asia-southeast1.firebasedatabase.app/"
-CSV_FILE = "./rawdata/feeds.csv"
+SERVICE_ACCOUNT_FILE = "aeronexus-os-firebase-adminsdk-fbsvc-9334452d6e.json"
+DATABASE_URL = os.environ["FIREBASE_DATABASE_URL"]
+CSV_FILE = "data/feeds.csv"
 
 cred = credentials.Certificate(SERVICE_ACCOUNT_FILE)
 firebase_admin.initialize_app(cred, {

@@ -23,7 +23,7 @@ function FleetCard({ aircraft, selected, onClick }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Aircraft</div>
-          <div className="mt-1 text-[clamp(1rem,1.4vw,1.5rem)] font-bold text-white tracking-tight truncate">{aircraft.displayName}</div>
+          <div className="mt-1 truncate text-xl font-bold text-white">{aircraft.displayName}</div>
           <div className="mt-1 text-xs text-slate-400">{aircraft.id} · {aircraft.model}</div>
         </div>
         <div className={cn('shrink-0 rounded-full px-2 py-1 text-[10px] font-medium', tone.chip)}>{aircraft.status}</div>
@@ -49,16 +49,16 @@ function FleetCard({ aircraft, selected, onClick }) {
 
 export default function HomePage({ fleet, selectedAircraft, setSelectedAircraft, setActivePage }) {
   return (
-    <section className="grid grid-cols-4 gap-2">
+    <section className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
       {fleet.map((aircraft) => (
         <FleetCard
-          key={aircraft.id}
-          aircraft={aircraft}
-          selected={selectedAircraft.id === aircraft.id}
-          onClick={() => {
-            setSelectedAircraft(aircraft);
-            setActivePage('details');
-          }}
+              key={aircraft.id}
+              aircraft={aircraft}
+              selected={selectedAircraft.id === aircraft.id}
+              onClick={() => {
+                setSelectedAircraft(aircraft);
+                setActivePage('details');
+              }}
         />
       ))}
     </section>

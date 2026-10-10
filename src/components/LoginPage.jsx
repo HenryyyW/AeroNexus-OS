@@ -10,12 +10,12 @@ export default function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#030914] text-white">
-      <div className="fixed inset-0 opacity-50 pointer-events-none" style={{ background:'radial-gradient(circle at 12% 18%, rgba(0,240,255,.08), transparent 22%), radial-gradient(circle at 80% 14%, rgba(55,242,155,.06), transparent 20%), linear-gradient(180deg, #03101e 0%, #030914 100%)' }} />
+    <div className="grok-theme min-h-screen bg-[#08090b] text-white">
+      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(69,130,205,0.08),transparent_38%)]" />
       <div className="relative flex min-h-screen items-center justify-center p-4">
         <div className="w-full max-w-md rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-8 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
           <div className="mb-6">
-            <div className="text-[10px] uppercase tracking-[0.38em] text-cyan-400/80">Ascendo Nexus OS</div>
+            <div className="text-[10px] uppercase tracking-[0.38em] text-cyan-400/80">AeroNexus OS</div>
             <h1 className="mt-2 text-3xl font-semibold text-white">Nexus OS Workspace</h1>
             <p className="mt-2 text-sm leading-6 text-slate-400">Please sign in to access the home dashboard.</p>
           </div>
