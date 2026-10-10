@@ -58,7 +58,13 @@ export default function App() {
     <div className="grok-theme min-h-screen bg-[#08090b] text-white">
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(69,130,205,0.08),transparent_38%)]" />
       <div className="relative mx-auto flex min-h-screen w-full max-w-[1800px] gap-3 p-4">
-        <Sidebar activePage={activePage} setActivePage={setActivePage} />
+        <Sidebar
+          activePage={activePage}
+          setActivePage={setActivePage}
+          fleet={liveFleetData}
+          selectedAircraft={currentAircraft}
+          setSelectedAircraft={(aircraft) => setSelectedId(aircraft.id)}
+        />
         <main className="min-w-0 flex-1">
           <TopHeader
             activePage={activePage}

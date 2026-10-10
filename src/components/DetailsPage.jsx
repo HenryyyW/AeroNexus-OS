@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, AreaChart, Area } from 'recharts';
-import { Radar } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pause, Play, Radar } from 'lucide-react';
 import { cn, getStatusTone, normalizeEvtolId, parseAnalysisItem } from '../utils/evtolUtils';
+import { buildAircraftAssetTree } from '../utils/assetModel';
 
 function DetailMetric({ label, value, accent = 'text-cyan-300' }) {
   return (
@@ -56,25 +58,200 @@ function PdMAreaChart({ data }) {
   );
 }
 
-function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
-  const rotors = Array.from({ length: 4 }).map((_, i) => {
-    const rpmOffset = Math.sin(Date.now() / 1000 + i) * 15;
-    const tempOffset = Math.cos(Date.now() / 2000 + i) * 2;
-    const vibOffset = Math.sin(Date.now() / 500 + i) * 0.5;
-    const vib = Number(aircraft.vibration || 0) + vibOffset;
-    return {
-      id: `Rotor 0${i + 1}`,
-      rpm: Math.round((aircraft.motorRpm || 0) + rpmOffset),
-      temp: ((aircraft.temperature || 0) + tempOffset).toFixed(1),
-      vib: Math.max(0, vib).toFixed(1),
-      status: vib > 40 ? 'Warning' : 'Nominal',
-    };
-  });
+function AssetStatus({ level }) {
+  const tone = {
+    Critical: 'border-red-500/30 bg-red-500/10 text-red-300',
+    Warning: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+    Monitoring: 'border-sky-500/30 bg-sky-500/10 text-sky-200',
+    Nominal: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+    Unknown: 'border-white/10 bg-white/[0.04] text-slate-400',
+  };
+  return <span className={cn('rounded-full border px-2 py-0.5 text-[10px] uppercase', tone[level] || tone.Unknown)}>{level}</span>;
+}
 
-  const batteries = [
-    { id: 'Battery Pack A', soc: aircraft.soc || 0, voltage: (aircraft.voltage || 400).toFixed(1), temp: (aircraft.temperature || 0).toFixed(1), status: (aircraft.soc || 0) < 20 ? 'Warning' : 'Nominal' },
-    { id: 'Battery Pack B', soc: Math.max(0, (aircraft.soc || 0) - 2), voltage: Math.max(0, (aircraft.voltage || 400) - 0.4).toFixed(1), temp: ((aircraft.temperature || 0) + 1.2).toFixed(1), status: (aircraft.soc || 0) < 22 ? 'Warning' : 'Nominal' },
-  ];
+function AssetTreeNode({ asset, depth = 0, selectedId, onSelect }) {
+  const [expanded, setExpanded] = useState(depth < 3);
+  const selected = selectedId === asset.id;
+  return (
+    <div>
+      <div className={cn('flex items-center gap-1 rounded-lg pr-2', selected ? 'bg-cyan-400/10' : 'hover:bg-white/[0.04]')} style={{ paddingLeft: `${depth * 12 + 4}px` }}>
+        {asset.children.length > 0 ? (
+          <button type="button" className="grid size-7 shrink-0 place-items-center text-slate-400 hover:text-white" aria-label={`${expanded ? 'Collapse' : 'Expand'} ${asset.name}`} onClick={() => setExpanded(!expanded)}>
+            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+        ) : <span className="size-7 shrink-0" />}
+        <button type="button" onClick={() => onSelect(asset.id)} className="flex min-w-0 flex-1 items-center justify-between gap-2 py-1.5 text-left">
+          <span className={cn('truncate text-xs', selected ? 'text-cyan-100' : 'text-slate-300')}>{asset.name}</span>
+          <AssetStatus level={asset.alertLevel} />
+        </button>
+      </div>
+      {expanded && asset.children.map((child) => <AssetTreeNode key={child.id} asset={child} depth={depth + 1} selectedId={selectedId} onSelect={onSelect} />)}
+    </div>
+  );
+}
+
+function AssetDetail({ asset }) {
+  const updated = asset.lastUpdated ? new Date(asset.lastUpdated).toLocaleString() : 'Not available';
+  return (
+    <div className="min-w-0 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{asset.kind} state</div>
+          <h3 className="mt-1 text-base font-semibold text-white">{asset.name}</h3>
+        </div>
+        <AssetStatus level={asset.alertLevel} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <DetailMetric label="Health" value={asset.health == null ? 'Unknown' : `${asset.health}%`} accent={asset.health != null && asset.health <= 85 ? 'text-amber-300' : 'text-cyan-300'} />
+        <DetailMetric label="Operating condition" value={asset.operatingCondition.state} accent="text-slate-200" />
+        <DetailMetric label="Remaining life" value={asset.remainingLife.value == null ? 'Unknown' : `${asset.remainingLife.value} ${asset.remainingLife.unit}`} accent="text-slate-200" />
+        <DetailMetric label="Last update" value={updated} accent="text-slate-300" />
+      </div>
+      {asset.operatingCondition.metrics.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {asset.operatingCondition.metrics.map((item) => <DetailMetric key={item.name} label={item.name} value={`${item.value} ${item.unit}`} accent="text-cyan-200" />)}
+        </div>
+      )}
+      <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
+        <div><span className="text-slate-500">Source: </span><span className="text-slate-300">{asset.source}</span></div>
+        <div><span className="text-slate-500">State rule: </span><span className="text-slate-300">{asset.method}</span></div>
+        <div><span className="text-slate-500">Life basis: </span><span className="text-slate-300">{asset.remainingLife.basis}</span></div>
+      </div>
+    </div>
+  );
+}
+
+function BatteryReplayPanel() {
+  const [dataset, setDataset] = useState(null);
+  const [cycleOffset, setCycleOffset] = useState(0);
+  const [sampleOffset, setSampleOffset] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/telemetry/battery-replay.json', { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then(setDataset)
+      .catch((error) => {
+        if (error.name !== 'AbortError') setLoadError('Recorded battery dataset could not be loaded.');
+      });
+    return () => controller.abort();
+  }, []);
+
+  const cycle = dataset?.cycles[cycleOffset];
+  const samples = cycle?.samples || [];
+  const eligibleCycles = dataset?.cycles.filter((item) => item.hasPairedChargeDischarge) || [];
+  const sample = samples[Math.min(sampleOffset, Math.max(samples.length - 1, 0))];
+
+  useEffect(() => {
+    if (!isPlaying || samples.length < 2) return undefined;
+    const interval = setInterval(() => {
+      setSampleOffset((offset) => (offset + 1) % samples.length);
+    }, 900);
+    return () => clearInterval(interval);
+  }, [isPlaying, samples.length]);
+
+  return (
+    <section className="rounded-xl border border-sky-400/20 bg-sky-950/20 p-3" aria-label="Recorded battery cell replay">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-sky-300">Recorded Dataset Replay</div>
+          <h3 className="mt-1 text-sm font-semibold text-white">18650 LFP bench-test cell</h3>
+          <p className="mt-1 text-[11px] text-slate-400">Independent lab asset · not eVTOL battery telemetry</p>
+        </div>
+        {cycle && <span className="rounded-full border border-sky-300/20 px-2 py-1 text-[10px] text-sky-200">Cycle {cycle.cycleIndex}</span>}
+      </div>
+
+      {loadError ? <p className="mt-3 text-xs text-rose-300">{loadError}</p> : !dataset ? (
+        <p className="mt-3 text-xs text-slate-400">Loading recorded battery data…</p>
+      ) : cycle && sample ? (
+        <>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <DetailMetric label="Voltage" value={`${sample.voltageV.toFixed(3)} V`} accent="text-cyan-200" />
+            <DetailMetric label="Current" value={`${sample.currentA.toFixed(3)} A`} accent="text-sky-200" />
+            <DetailMetric label="Cell temperature" value={`${sample.cellTemperatureC.toFixed(2)} °C`} accent="text-amber-200" />
+            <DetailMetric label="Charge capacity" value={`${sample.chargeCapacityAh.toFixed(3)} Ah`} accent="text-slate-200" />
+            <DetailMetric label="Discharge capacity" value={`${sample.dischargeCapacityAh.toFixed(3)} Ah`} accent="text-slate-200" />
+            <DetailMetric label="Relative discharge capacity" value={cycle.capacityRetentionPercent == null ? 'Not eligible' : `${cycle.capacityRetentionPercent.toFixed(2)}%`} accent="text-sky-200" />
+            <DetailMetric label="Peak cycle temperature" value={`${cycle.peakCellTemperatureC.toFixed(2)} °C`} accent="text-slate-200" />
+          </div>
+
+          <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <div className="text-xs font-medium text-slate-200">Capacity retention vs first eligible cycle</div>
+              <div className="font-mono text-[10px] text-sky-200">Baseline {dataset.capacityTrend.referenceDischargeCapacityAh?.toFixed(3) ?? 'N/A'} Ah · Cycle {dataset.capacityTrend.referenceCycleIndex ?? 'N/A'}</div>
+            </div>
+            <div className="mt-2 h-36">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={eligibleCycles}>
+                  <XAxis dataKey="cycleIndex" tick={{ fill: '#64748b', fontSize: 9 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={['auto', 'auto']} tick={{ fill: '#64748b', fontSize: 9 }} width={38} />
+                  <Tooltip contentStyle={{ backgroundColor: '#050b14', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', color: '#e2f7ff' }} />
+                  <Line type="monotone" dataKey="capacityRetentionPercent" name="Relative capacity (%)" stroke="#38bdf8" strokeWidth={1.7} dot={false} connectNulls={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="mt-1 text-[10px] leading-4 text-slate-500">
+              {dataset.capacityTrend.eligibleCycleCount.toLocaleString()} of {dataset.cycles.length.toLocaleString()} cycle indices contain both current directions and positive discharge capacity. The source does not provide a verified discharge cutoff, so this is a relative measured-capacity trend, not certified SOH or RUL.
+            </p>
+          </div>
+
+          <div className="mt-3 h-36 rounded-lg border border-white/10 bg-black/20 p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={samples}>
+                <XAxis dataKey="testTimeSeconds" tick={{ fill: '#64748b', fontSize: 9 }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="voltage" domain={['auto', 'auto']} tick={{ fill: '#67e8f9', fontSize: 9 }} width={36} />
+                <YAxis yAxisId="temperature" orientation="right" domain={['auto', 'auto']} tick={{ fill: '#fcd34d', fontSize: 9 }} width={36} />
+                <Tooltip contentStyle={{ backgroundColor: '#050b14', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', color: '#e2f7ff' }} />
+                <Line yAxisId="voltage" type="monotone" dataKey="voltageV" name="Voltage (V)" stroke="#67e8f9" strokeWidth={1.7} dot={false} />
+                <Line yAxisId="temperature" type="monotone" dataKey="cellTemperatureC" name="Cell temp (°C)" stroke="#fbbf24" strokeWidth={1.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
+            <button type="button" onClick={() => setIsPlaying(!isPlaying)} className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-slate-200 hover:bg-white/[0.06]" aria-label={isPlaying ? 'Pause replay' : 'Play replay'} title={isPlaying ? 'Pause replay' : 'Play replay'}>
+              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+            </button>
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">Recorded sample position</span>
+              <input type="range" min="0" max={Math.max(samples.length - 1, 0)} value={Math.min(sampleOffset, Math.max(samples.length - 1, 0))} onChange={(event) => setSampleOffset(Number(event.target.value))} className="w-full accent-cyan-300" />
+            </label>
+            <span className="shrink-0 font-mono text-[10px] text-slate-400">{sampleOffset + 1}/{samples.length}</span>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+            <span>Recorded: <time>{sample.timestamp}</time></span>
+            <span>{cycle.sourceRowCount.toLocaleString()} source rows · {samples.length} replay samples</span>
+          </div>
+          <label className="mt-3 block text-[10px] text-slate-400">
+            Cycle {cycleOffset + 1} of {dataset.cycles.length}
+            <input type="range" min="0" max={dataset.cycles.length - 1} value={cycleOffset} onChange={(event) => { setCycleOffset(Number(event.target.value)); setSampleOffset(0); setIsPlaying(false); }} className="mt-1 w-full accent-sky-300" />
+          </label>
+          <div className="mt-2 break-words text-[10px] text-slate-500">Source file: {dataset.source.file} · Every {dataset.source.sampleEverySourceRows}th source row plus each cycle’s first and last rows.</div>
+        </>
+      ) : <p className="mt-3 text-xs text-slate-400">No replay samples are available.</p>}
+    </section>
+  );
+}
+
+function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
+  const assetTree = buildAircraftAssetTree(aircraft);
+  const allAssets = [];
+  const collectAssets = (asset) => {
+    allAssets.push(asset);
+    asset.children.forEach(collectAssets);
+  };
+  collectAssets(assetTree);
+  const componentAssets = allAssets.filter((asset) => asset.kind === 'component');
+  const attentionCount = componentAssets.filter((asset) => ['Critical', 'Warning', 'Monitoring'].includes(asset.alertLevel)).length;
+  const unknownCount = componentAssets.filter((asset) => asset.alertLevel === 'Unknown').length;
+  const [selectedAssetId, setSelectedAssetId] = useState(assetTree.children[0]?.children[0]?.id || assetTree.id);
+  const [isBatteryReplayVisible, setIsBatteryReplayVisible] = useState(false);
+  const selectedAsset = allAssets.find((asset) => asset.id === selectedAssetId) || assetTree;
 
   const cockpitVideoMap = {
     'EVTOL-01': '/videos/evtol-1.mp4',
@@ -97,76 +274,69 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
   return (
     <div className="flex flex-col rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-5 h-full">
       <div className="mb-5">
-        <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-400/80">Real-time Telemetry</div>
-        <h2 className="mt-1 text-[clamp(1rem,1.5vw,1.25rem)] font-semibold text-white tracking-wide">Subsystem Telemetry Stream</h2>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-amber-300/90">Digital Twin · Demo Model</div>
+        <h2 className="mt-1 text-lg font-semibold text-white">{aircraft.id} Asset Hierarchy</h2>
+        <p className="mt-1 text-xs text-slate-400">Fleet values are simulated; component-level sensors are not connected.</p>
       </div>
-      <div className="flex-1 space-y-6 pr-2">
-        <div>
-          <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            Propulsion System
-          </h3>
-          <div className="grid grid-cols-2 gap-2.5">
-            {rotors.map((r) => (
-              <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 hover:border-cyan-500/30 transition-colors">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-bold text-slate-200">{r.id}</span>
-                  <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium tracking-wider uppercase', r.status === 'Warning' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20')}>{r.status}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-[10px]">
-                  <div className="bg-black/20 rounded-xl p-2"><span className="text-slate-500 block mb-1">RPM</span><div className="text-cyan-300 font-mono text-sm">{r.rpm}</div></div>
-                  <div className="bg-black/20 rounded-xl p-2"><span className="text-slate-500 block mb-1">TMP</span><div className={cn('font-mono text-sm', r.temp > 65 ? 'text-amber-300' : 'text-cyan-300')}>{r.temp}°C</div></div>
-                  <div className="bg-black/20 rounded-xl p-2"><span className="text-slate-500 block mb-1">VIB</span><div className={cn('font-mono text-sm', r.vib > 35 ? 'text-amber-300' : 'text-cyan-300')}>{r.vib}</div></div>
-                </div>
-              </div>
+      <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+        <section aria-label="Current component status" className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-200">Component status</h3>
+              <p className="mt-1 text-[10px] text-slate-500">
+                {attentionCount > 0 ? `${attentionCount} component(s) need attention` : 'No modeled component alerts'} · {unknownCount} unknown due to missing component telemetry
+              </p>
+            </div>
+            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-200">Simulated fleet state</span>
+          </div>
+          <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            {componentAssets.map((asset) => (
+              <button
+                key={asset.id}
+                type="button"
+                onClick={() => setSelectedAssetId(asset.id)}
+                aria-pressed={selectedAssetId === asset.id}
+                className={cn('flex min-w-0 items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors', selectedAssetId === asset.id ? 'border-cyan-400/40 bg-cyan-400/[0.08]' : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]')}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-xs text-slate-200">{asset.name}</span>
+                  <span className="mt-0.5 block truncate text-[10px] text-slate-500">{asset.operatingCondition.state}</span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end gap-1">
+                  <AssetStatus level={asset.alertLevel} />
+                  <span className="font-mono text-[10px] text-slate-500">{asset.health == null ? 'No health data' : `${asset.health}% health proxy`}</span>
+                </span>
+              </button>
             ))}
           </div>
-        </div>
-        <div>
-          <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            Power System
-          </h3>
-          <div className="grid grid-cols-2 gap-2.5">
-            {batteries.map((b) => (
-              <div key={b.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 hover:border-emerald-500/30 transition-colors">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-bold text-slate-200">{b.id}</span>
-                  <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium tracking-wider uppercase', b.status === 'Warning' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20')}>{b.status}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-[10px]">
-                  <div className="bg-black/20 rounded-xl p-2"><span className="text-slate-500 block mb-1">SOC</span><div className="text-emerald-300 font-mono text-sm">{b.soc}%</div></div>
-                  <div className="bg-black/20 rounded-xl p-2"><span className="text-slate-500 block mb-1">VOLT</span><div className="text-emerald-300 font-mono text-sm">{b.voltage}V</div></div>
-                  <div className="bg-black/20 rounded-xl p-2"><span className="text-slate-500 block mb-1">TMP</span><div className="text-emerald-300 font-mono text-sm">{b.temp}°C</div></div>
-                </div>
-              </div>
-            ))}
+        </section>
+        <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(210px,0.8fr)_minmax(0,1.2fr)]">
+          <nav aria-label="Aircraft asset hierarchy" className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-2">
+            <AssetTreeNode asset={assetTree} selectedId={selectedAssetId} onSelect={setSelectedAssetId} />
+          </nav>
+          <div className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-3">
+            <AssetDetail asset={selectedAsset} />
           </div>
         </div>
-        <div>
-          <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            Avionics & Sensors
-          </h3>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="flex justify-between items-center rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
-              <div className="text-sm font-medium text-slate-200">Main Flight Computer</div>
-              <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Online</div>
-            </div>
-            <div className="flex justify-between items-center rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
-              <div className="text-sm font-medium text-slate-200">LiDAR Array</div>
-              <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Active</div>
-            </div>
-            <div className="flex justify-between items-center rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
-              <div className="text-sm font-medium text-slate-200">Comm Link</div>
-              <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Stable</div>
-            </div>
-            <div className="flex justify-between items-center rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
-              <div className="text-sm font-medium text-slate-200">Nav Sensors</div>
-              <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Nominal</div>
-            </div>
-          </div>
-        </div>
+        <section className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <button
+            type="button"
+            aria-expanded={isBatteryReplayVisible}
+            aria-controls="battery-replay-panel"
+            onClick={() => setIsBatteryReplayVisible(!isBatteryReplayVisible)}
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <span>
+              <span className="block text-xs font-medium text-slate-200">Offline battery cell replay</span>
+              <span className="mt-1 block text-[10px] text-slate-500">Optional lab dataset · loads only when opened</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-2 text-[10px] text-sky-200">
+              {isBatteryReplayVisible ? 'Hide replay' : 'Open replay'}
+              {isBatteryReplayVisible ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </span>
+          </button>
+          {isBatteryReplayVisible && <div id="battery-replay-panel" className="mt-3"><BatteryReplayPanel /></div>}
+        </section>
         <div>
           <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">
             <div className="w-1.5 h-1.5 rounded-full bg-sky-400" />
@@ -175,7 +345,7 @@ function ComponentsDataPanel({ aircraft, agentResponse: agentResponseProp }) {
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
             <div className="flex justify-between items-center mb-3">
               <div className="text-sm font-bold text-slate-200">View</div>
-              <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Live</div>
+              <div className="text-[10px] font-medium uppercase tracking-wider text-amber-200 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">Demo media</div>
             </div>
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
               <video autoPlay loop muted playsInline className="w-full aspect-video object-cover" src={cockpitVideoSrc} />
@@ -263,7 +433,7 @@ export default function DetailsPage({ selectedAircraft, agentResponses }) {
 
   return (
     <section className="grid grid-cols-[1.02fr_0.98fr] gap-2">
-      <ComponentsDataPanel aircraft={selectedAircraft} agentResponse={agentResp} />
+      <ComponentsDataPanel key={selectedAircraft.id} aircraft={selectedAircraft} agentResponse={agentResp} />
       <div className="grid min-w-0 gap-2">
         <div className="rounded-3xl border border-white/10 bg-[#07111f]/90 p-2.5">
           <div className="mb-3 flex items-start justify-between gap-2">

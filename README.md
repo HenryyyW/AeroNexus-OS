@@ -59,6 +59,12 @@ Firebase is optional. For the frontend reader, set `VITE_FIREBASE_DATABASE_URL` 
 
 Use `.env.example` as a variable-name reference; replace its placeholder values with the database URL for your Firebase project.
 
+## Offline Battery Replay
+
+The LFP replay is built from `data/SNL_18650_LFP_25C_0-100_0.5-2C_a_timeseries.txt` and represents a recorded 18650 single-cell bench test, not an eVTOL battery pack or live telemetry. Rebuild its compact browser asset with `npm run prepare:battery-replay`; run parser checks with `npm run test:battery-replay`.
+
+The repository does not include the test protocol or a verified discharge cutoff voltage for this file. A cycle is eligible for relative-capacity comparison only when it contains both positive and negative current rows and positive measured discharge capacity. Capacity retention is normalized to the first eligible cycle; it is not certified battery SOH or RUL, and eligible records are not asserted to be complete 0-100% cycles.
+
 ## Road Network KML Data Setup
 
 The road speed overlay requires external KML files that are not committed to this repository.

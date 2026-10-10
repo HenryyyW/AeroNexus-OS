@@ -1,4 +1,4 @@
-import { useState, Suspense, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { getStatusTone, cn } from '../utils/evtolUtils';
 import { weatherStations } from '../data/weatherStations';
 import useWindData from '../hooks/useWindData';

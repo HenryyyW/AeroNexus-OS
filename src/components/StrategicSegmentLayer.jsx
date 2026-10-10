@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import * as L from 'leaflet';
 
 const SEGMENT_ROUTE_CSV_URL = '/speed_segments_info.csv';
 const SEGMENT_SPEED_XML_URL = '/api/traffic/segment-speeds';
@@ -138,8 +139,6 @@ export default function StrategicSegmentLayer({ leafletMap, autoFit = true }) {
 
   useEffect(() => {
     if (!leafletMap || typeof window === 'undefined') return;
-    const L = window.L;
-    if (!L) return;
 
     const applySegmentStyles = (speedMap, updatedAt) => {
       let matchedCount = 0;
