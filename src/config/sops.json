@@ -1,0 +1,79 @@
+{
+  "batteryPack": {
+    "title": "Battery Pack Fault Procedure",
+    "steps": [
+      "Check that battery voltage and state of charge are within normal limits.",
+      "Measure internal resistance and capacity, then compare them with baseline values.",
+      "If voltage is abnormal and internal resistance is increasing, investigate battery aging or a short circuit.",
+      "If temperature is elevated, inspect the thermal management system.",
+      "Determine whether immediate landing or maintenance is required based on severity."
+    ],
+    "references": ["Battery Maintenance Manual v3.2", "Flight Safety Manual §4.5"]
+  },
+  "powerElectronics": {
+    "title": "Power Electronics Fault Procedure",
+    "steps": [
+      "Monitor input and output voltage and current waveforms.",
+      "Inspect switching component temperatures and cooling performance.",
+      "Verify that drive signals are operating normally.",
+      "Abnormal voltage with resistance drift may indicate an inverter or DC/DC converter fault.",
+      "Shut down and inspect if unusual noise or significant vibration is present."
+    ],
+    "references": ["Electrical System Maintenance Guide", "Avionics Fault Diagnosis Manual"]
+  },
+  "airframe": {
+    "title": "Airframe Structural Fault Procedure",
+    "steps": [
+      "Visually inspect the airframe for cracks, deformation, or loose fasteners.",
+      "Measure the vibration spectrum and look for resonant frequencies.",
+      "Check torque at primary structural joints.",
+      "A sudden vibration increase with normal RPM may indicate rotor imbalance or structural fatigue.",
+      "Perform ultrasonic or radiographic inspection when required."
+    ],
+    "references": ["Structural Integrity Inspection Manual", "Composite Materials Repair Manual"]
+  },
+  "avionics": {
+    "title": "Avionics Fault Procedure",
+    "steps": [
+      "Check that cockpit instrument displays are operating normally.",
+      "Check communication links for interruptions or error codes.",
+      "Test navigation, attitude, and flight control signals.",
+      "Simultaneous sensor anomalies may indicate electromagnetic interference or a grounding issue.",
+      "Run the avionics built-in test (BIT) if needed."
+    ],
+    "references": ["Avionics Operations Manual", "EMC Protection Guide"]
+  },
+  "coolingSystem": {
+    "title": "Cooling System Fault Procedure",
+    "steps": [
+      "Check coolant flow and temperature distribution.",
+      "Measure radiator airflow or coolant pump pressure.",
+      "Inspect cooling passages for blockages or leaks.",
+      "Concurrent temperature and voltage drift may indicate reduced cooling performance.",
+      "Clean the radiator or replace a faulty fan."
+    ],
+    "references": ["Thermal Management Design Manual", "Liquid Cooling System Maintenance Manual"]
+  },
+  "bearing": {
+    "title": "Bearing Wear Procedure",
+    "steps": [
+      "Monitor bearing temperature and vibration spectrum.",
+      "Inspect lubricant condition and contamination levels.",
+      "Concurrent increases in bearing temperature and vibration may indicate insufficient lubrication or fatigue.",
+      "Estimate remaining useful life from vibration trends.",
+      "Plan bearing replacement when alert thresholds are reached."
+    ],
+    "references": ["Rotor Mechanical Maintenance Manual", "Bearing Fault Diagnosis Standard"]
+  },
+  "batteryThermalManagement": {
+    "title": "Battery Thermal Management Fault Procedure",
+    "steps": [
+      "Check whether battery pack surface temperatures are uniform.",
+      "Measure coolant flow and pressure.",
+      "A rapid state-of-charge drop with high temperature may indicate thermal runaway risk.",
+      "Initiate emergency cooling or isolation procedures.",
+      "Follow fire response procedures if smoke or unusual odors are present."
+    ],
+    "references": ["Battery Thermal Management System Manual", "Emergency Response Procedures"]
+  }
+}

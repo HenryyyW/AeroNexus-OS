@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight, Pause, Play, Radar } from 'lucide-react';
 import { cn, getStatusTone, normalizeEvtolId, parseAnalysisItem } from '../utils/evtolUtils';
 
 import { buildAircraftAssetTree } from '../utils/assetModel';
+import { useFlightOpsAgent } from '../hooks/useFlightOpsAgent';
 
 
 
@@ -1411,19 +1412,83 @@ export default function DetailsPage({ selectedAircraft, agentResponses }) {
 }
 
 export function AgenticGuardPage({ selectedAircraft, agentResponses }) {
+  const { explainAnomaly } = useFlightOpsAgent(selectedAircraft);
+  const flightOpsExplanation = explainAnomaly();
+
   if (!selectedAircraft) return null;
 
   const responseKey = normalizeEvtolId(selectedAircraft.id);
   const agentResponse = selectedAircraft.agent || selectedAircraft.agenticGuard || agentResponses[responseKey] || null;
+  const diagnosisGuidance = {
+    batteryPack: 'Battery degradation or an increase in internal resistance is suspected.',
+    powerElectronics: 'Voltage irregularity with resistance drift may indicate a power electronics fault.',
+    airframe: 'Elevated vibration with normal RPM may indicate rotor imbalance or structural looseness.',
+    avionics: 'Simultaneous sensor spikes may indicate electromagnetic interference or an avionics fault.',
+    coolingSystem: 'Temperature and voltage drift may indicate reduced cooling performance.',
+    bearing: 'Elevated vibration and temperature may indicate bearing wear.',
+    batteryThermalManagement: 'A rapid SOC drop with high temperature may indicate a battery thermal runaway risk.',
+  };
 
   return (
-    <section className="min-w-0 lg:w-1/2">
+    <section className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
       <ComponentsDataPanel
         key={selectedAircraft.id}
         aircraft={selectedAircraft}
         agentResponse={agentResponse}
         view="agentic-guard"
       />
+      <div className="flex h-full min-w-0 flex-col rounded-3xl border border-cyan-500/20 bg-[#07111f]/90 p-5">
+        <div className="mb-5">
+          <div className="text-[10px] uppercase tracking-[0.3em] text-amber-300/90">Flight Operations · Live Analysis</div>
+          <h2 className="mt-1 text-lg font-semibold text-white">{selectedAircraft.id} FlightOps Agent</h2>
+          <p className="mt-1 text-xs text-slate-400">Anomaly explanation and operational guidance.</p>
+        </div>
+        <div className="space-y-4">
+          {flightOpsExplanation.faultDiagnosis ? (
+            <section aria-label="Fault diagnosis" className="space-y-3">
+              <DetailMetric label="Subsystem" value={flightOpsExplanation.faultDiagnosis.subsystem} accent="text-cyan-300" />
+              {flightOpsExplanation.faultDiagnosis.component && (
+                <DetailMetric label="Component" value={flightOpsExplanation.faultDiagnosis.component} accent="text-cyan-300" />
+              )}
+              <DetailMetric label="Confidence" value={`${(flightOpsExplanation.faultDiagnosis.confidence * 100).toFixed(1)}%`} accent="text-cyan-300" />
+              <p className="text-sm leading-6 text-slate-300">
+                {diagnosisGuidance[flightOpsExplanation.faultDiagnosis.component] || 'A fault pattern was detected. Review the related subsystem and operating data.'}
+              </p>
+            </section>
+          ) : (
+            <p className="text-sm text-slate-400">No significant fault detected.</p>
+          )}
+          {flightOpsExplanation.sop && (
+            <section aria-label="Recommended standard operating procedure" className="border-t border-white/10 pt-4">
+              <h4 className="mb-2 text-sm font-semibold text-slate-200">Recommended SOP</h4>
+              <div className="space-y-2 text-sm text-slate-300">
+                <div className="font-medium">{flightOpsExplanation.sop.title}</div>
+                <ol className="list-decimal space-y-1 pl-5">
+                  {flightOpsExplanation.sop.steps.map((step, idx) => (
+                    <li key={idx}>{step}</li>
+                  ))}
+                </ol>
+                {flightOpsExplanation.sop.references && (
+                  <div className="text-xs text-slate-500">References: {flightOpsExplanation.sop.references.join(', ')}</div>
+                )}
+              </div>
+            </section>
+          )}
+          {Object.keys(flightOpsExplanation.anomalyFlags).length > 0 && (
+            <section aria-label="Anomaly flags" className="border-t border-white/10 pt-4">
+              <h4 className="mb-2 text-sm font-semibold text-slate-200">Anomaly Flags</h4>
+              <div className="space-y-2 text-sm text-slate-300">
+                {Object.entries(flightOpsExplanation.anomalyFlags).map(([name, flag]) => (
+                  <div key={name} className="flex justify-between gap-3">
+                    <span className="min-w-0 break-words">{name}</span>
+                    <span className="shrink-0 font-mono">{flag.type} · {flag.severity.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          </div>
+        </div>
     </section>
   );
 }

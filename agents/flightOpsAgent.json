@@ -1,0 +1,16 @@
+{
+  "name": "FlightOps Agent",
+  "description": "負責異常解釋和運營問答",
+  "capabilities": {
+    "anomalyExplanation": [
+      "拉相關 telemetry / 事件",
+      "對照手冊或 SOP（RAG）",
+      "說明「可能是哪個子系統、依據是什麼」"
+    ],
+    "operationalQA": [
+      "過去 24 小時有哪些 critical alerts？",
+      "電池相關異常有無變頻繁？",
+      "某次告警發生前後狀態如何？"
+    ]
+  }
+}
