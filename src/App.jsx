@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
 import HomePage from './components/HomePage';
 import TwinsPage from './components/TwinsPage';
-import DetailsPage from './components/DetailsPage';
+import DetailsPage, { AgenticGuardPage } from './components/DetailsPage';
 import SettingsPage from './components/SettingsPage';
 import useLocalStorageState from './hooks/useLocalStorageState';
 import useSimulatedFleet from './hooks/useSimulatedFleet';
@@ -92,6 +92,7 @@ export default function App() {
               />
             )}
             {activePage === 'details' && <DetailsPage selectedAircraft={currentAircraft} agentResponses={agentResponses} />}
+            {activePage === 'agentic-guard' && <AgenticGuardPage selectedAircraft={currentAircraft} agentResponses={agentResponses} />}
             {activePage === 'settings' && <SettingsPage />}
           </div>
         </main>

@@ -5,6 +5,7 @@ export default function TopHeader({ activePage, selectedAircraft, fleetStats, on
     home: 'Fleet Health Overview',
     twins: 'Spatial Synchronization',
     details: 'Asset Diagnostics',
+    'agentic-guard': 'Agentic Guard',
     settings: 'System Configuration',
   };
 

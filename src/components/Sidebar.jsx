@@ -1,10 +1,11 @@
 import { createElement } from 'react';
-import { ChevronDown, Cpu, Home, Plane, Settings } from 'lucide-react';
+import { ChevronDown, Cpu, Home, Plane, Settings, ShieldCheck } from 'lucide-react';
 import { cn } from '../utils/evtolUtils';
 
 const navItems = [
   { key: 'home', label: 'Home', icon: Home },
   { key: 'details', label: 'Asset Diagnostics', icon: Plane },
+  { key: 'agentic-guard', label: 'Agentic Guard', icon: ShieldCheck },
   { key: 'twins', label: 'Spatial Synchronization', icon: Cpu },
   { key: 'settings', label: 'System Configuration', icon: Settings },
 ];

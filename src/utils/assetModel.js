@@ -26,21 +26,21 @@ function aggregateConfidence(children) {
   return Math.round((weightedSum / totalWeight) * 10000) / 10000;
 }
 
-// Merge sensor health flags from children
+// Merge sensor health flags from children (AND logic: all must be OK)
 function mergeSensorHealth(children) {
   const merged = {};
   children.forEach(child => {
     if (child.sensorOK) {
       Object.entries(child.sensorOK).forEach(([key, value]) => {
         if (merged[key] === undefined) merged[key] = value;
-        else merged[key] = merged[key] && value; // AND logic: all children must be OK
+        else merged[key] = merged[key] && value; // all children must be OK
       });
     }
   });
   return merged;
 }
 
-// Merge validation details (collect all)
+// Merge validation details (collect all, then AND for validity)
 function mergeValidationDetails(children) {
   const merged = {};
   children.forEach(child => {
@@ -64,6 +64,26 @@ function mergeValidationDetails(children) {
   return result;
 }
 
+// Merge anomaly flags from children (take max severity per type)
+function mergeAnomalyFlags(children) {
+  const merged = {};
+  children.forEach(child => {
+    if (child.anomalyFlags) {
+      Object.entries(child.anomalyFlags).forEach(([key, flag]) => {
+        if (!merged[key]) {
+          merged[key] = { ...flag }; // copy
+        } else {
+          // keep the higher severity
+          if (flag.severity > merged[key].severity) {
+            merged[key] = { ...flag };
+          }
+        }
+      });
+    }
+  });
+  return merged;
+}
+
 function node({
   id,
   parentId,
@@ -82,7 +102,12 @@ function node({
   validationDetails = null,
   confidence = null,
   eventTime = null,
-  processingTime = null
+  processingTime = null,
+  // New fields for analysis capability
+  anomalyFlags = null,
+  diagnosis = null,
+  predictedRulHours = null,
+  maintenanceSuggestion = null
 }) {
   return {
     id,
@@ -102,7 +127,12 @@ function node({
     validationDetails,
     confidence,
     eventTime,
-    processingTime
+    processingTime,
+    // Analysis fields
+    anomalyFlags,
+    diagnosis,
+    predictedRulHours,
+    maintenanceSuggestion
   };
 }
 
@@ -121,6 +151,7 @@ function buildSubsystem({ aircraft, id, name, children, lastUpdated }) {
   const sensorOK = mergeSensorHealth(children);
   const validationDetails = mergeValidationDetails(children);
   const confidence = aggregateConfidence(children);
+  const anomalyFlags = mergeAnomalyFlags(children);
   const eventTime = children.length > 0 ? children[0].eventTime : null;
   const processingTime = children.length > 0 ? children[0].processingTime : null;
 
@@ -141,8 +172,10 @@ function buildSubsystem({ aircraft, id, name, children, lastUpdated }) {
     sensorOK,
     validationDetails,
     confidence,
+    anomalyFlags,
     eventTime,
     processingTime
+    // diagnosis, predictedRulHours, maintenanceSuggestion are not aggregated (null)
   });
 }
 
@@ -216,6 +249,7 @@ export function buildAircraftAssetTree(aircraft) {
       confidence: aircraft.confidence ?? null,
       eventTime: aircraft.eventTime ?? null,
       processingTime: aircraft.processingTime ?? null
+      // analysis fields: null for components
     });
   });
 
@@ -270,6 +304,7 @@ export function buildAircraftAssetTree(aircraft) {
     confidence: aircraft.confidence ?? null,
     eventTime: aircraft.eventTime ?? null,
     processingTime: aircraft.processingTime ?? null
+    // analysis fields: null for components
   })];
 
   const avionicsChildren = [
@@ -294,6 +329,7 @@ export function buildAircraftAssetTree(aircraft) {
     confidence: null,
     eventTime: aircraft.eventTime ?? null,
     processingTime: aircraft.processingTime ?? null
+    // analysis fields: null
   }));
 
   const structureChildren = [node({
@@ -326,17 +362,20 @@ export function buildAircraftAssetTree(aircraft) {
     confidence: aircraft.confidence ?? null,
     eventTime: aircraft.eventTime ?? null,
     processingTime: aircraft.processingTime ?? null
+    // analysis fields: null
   })];
 
   const subsystems = [
     buildSubsystem({ aircraft, id: `${aircraft.id}-propulsion`, name: 'Propulsion', children: motors, lastUpdated }),
     buildSubsystem({ aircraft, id: `${aircraft.id}-power`, name: 'Power', children: powerChildren, lastUpdated }),
     buildSubsystem({ aircraft, id: `${aircraft.id}-avionics`, name: 'Avionics & Sensors', children: avionicsChildren, lastUpdated }),
-    buildSubsystem({ aircraft, id: `${aircraft.id}-structure`, name: 'Structure', children: structureChildren, lastUpdated }),
+    buildSubsystem({ aircraft, id: `${aircraft.id}-structure`, name: 'Structure', children: structureChildren, lastUpdated })
   ];
 
   // Aggregate confidence at aircraft level
   const aircraftConfidence = aggregateConfidence(subsystems);
+  // Aggregate anomaly flags at aircraft level
+  const aircraftAnomalyFlags = mergeAnomalyFlags(subsystems);
 
   return node({
     id: aircraft.id,
@@ -367,6 +406,11 @@ export function buildAircraftAssetTree(aircraft) {
     sensorOK: aircraft.sensorOK ?? null,
     validationDetails: aircraft.validationDetails ?? null,
     confidence: aircraftConfidence,
+    anomalyFlags: aircraftAnomalyFlags,
+    // Analysis fields from aircraft (computed in useSimulatedFleet)
+    diagnosis: aircraft.diagnosis ?? null,
+    predictedRulHours: aircraft.predictedRulHours ?? null,
+    maintenanceSuggestion: aircraft.maintenanceSuggestion ?? null,
     eventTime: aircraft.eventTime ?? null,
     processingTime: aircraft.processingTime ?? null
   });
